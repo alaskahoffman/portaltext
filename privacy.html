@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Privacy policy — portaltext</title>
+<link rel="icon" type="image/svg+xml" href="/assets/portalcatmini.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1c1c19;
+    --ink-soft: #4a4a44;
+    --muted: #8a8a82;
+    --rule: rgba(28, 28, 25, 0.12);
+    --paper: #ffffff;
+    --avocado: #5a8a1f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 80px 32px 120px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "LINE Seed JP", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; }
+  .meta {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 8px;
+  }
+  h1 {
+    font-family: "LINE Seed JP", sans-serif;
+    font-size: clamp(32px, 4vw, 44px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0 0 40px;
+    line-height: 1.1;
+  }
+  h2 {
+    font-family: "LINE Seed JP", sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin: 40px 0 12px;
+    letter-spacing: -0.005em;
+  }
+  p, ul { margin: 0 0 18px; color: var(--ink-soft); }
+  ul { padding-left: 24px; }
+  li { margin-bottom: 6px; }
+  strong { color: var(--ink); font-weight: 700; }
+  a {
+    color: var(--avocado);
+    text-decoration: none;
+    border-bottom: 1px dotted rgba(90, 138, 31, 0.5);
+  }
+  a:hover { border-bottom-style: solid; }
+  .footer-link {
+    margin-top: 56px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    font-size: 13px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="meta">Privacy policy · Last updated 2026-06-12</p>
+  <h1>What portaltext does with your data.</h1>
+
+  <p>portaltext is a browser extension that adds AI-powered hover-preview tooltips to links on the web. This page explains what we collect when you use it, what we do with it, and what we don't do with it.</p>
+
+  <h2>What we collect</h2>
+  <ul>
+    <li><strong>An anonymous install identifier</strong>: a random ID the extension creates when installed. No email, no name, no sign-up — the ID carries no personal information and exists only so your daily usage allowance has something to attach to.</li>
+    <li><strong>The URL or Wikipedia term you hover</strong>, sent to our server so it can fetch the linked page and summarize it.</li>
+    <li><strong>Brief context about the page you're on</strong>: its title and the first 500 characters of its body text, so the summary can mention how the link connects to what you're reading.</li>
+    <li><strong>Usage counters</strong>: per-install credit counters that track how much of the daily allowance you've used. This is what enforces the limits.</li>
+  </ul>
+
+  <h2>What we don't keep</h2>
+  <p>We do <strong>not</strong> log which URLs you hover, which sites you visit, or when you read them. Each request is processed in memory for the few seconds it takes to generate the summary, then the URL and context are discarded. We have no per-event browsing history.</p>
+
+  <p>We do not use any third-party analytics, advertising, or behavioral-profiling services. No Google Analytics, no Mixpanel, nothing of that kind runs in the extension or on our server.</p>
+
+  <h2>Third parties we send data to</h2>
+  <p>portaltext works by routing your requests through a few external services. Each one only receives the minimum it needs:</p>
+  <ul>
+    <li><strong>AI providers (Anthropic, OpenRouter)</strong> — receive the prompt content (the page text and the URL or term being summarized) for AI inference. Their commercial terms state they do not store prompts or use them to train models.</li>
+    <li><strong>Render</strong> — hosts our server. Standard infrastructure provider.</li>
+    <li><strong>Wikipedia / Wiktionary</strong> — public APIs we query for source content. They see our server's IP, not yours.</li>
+  </ul>
+
+  <h2>What's stored where</h2>
+  <p><strong>On your device</strong>, in the extension's storage: your install token, theme and language preferences, the list of domains you've turned the extension off for, and any tooltips you've saved. Nothing else.</p>
+  <p><strong>On our server</strong>, in our database: your random install ID, plan tier, creation date, and current usage counters. No email, no name, no browsing history. That's all.</p>
+
+  <h2>Your rights</h2>
+  <ul>
+    <li><strong>See your data</strong>: your plan and usage are visible in the extension popup at any time; your install ID is in the popup's settings.</li>
+    <li><strong>Delete your data</strong>: uninstalling the extension orphans your install record (it holds nothing personal); email us your install ID and we'll delete it within 30 days.</li>
+    <li><strong>Export your data</strong>: same path — request it and we'll send what we have, which is just the fields listed above.</li>
+  </ul>
+
+  <h2>Changes to this policy</h2>
+  <p>If we change anything material, this page will be updated and the change will be flagged in the extension on first open after the change.</p>
+
+  <h2>Contact</h2>
+  <p>Questions, deletion requests, or anything else: <a href="mailto:hello@portaltext.com">hello@portaltext.com</a>.</p>
+
+  <p class="footer-link"><a href="/">← portaltext.com</a></p>
+</div>
+</body>
+</html>

@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@400;700;800&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper:        #ffffff;
+      --paper-dim:    #f5f5f5;
+      --ink:          #1c1c19;
+      --ink-soft:     #4a4a44;
+      --muted:        #8a8a82;
+      --rule:         rgba(28, 28, 25, 0.12);
+      --rule-strong:  rgba(28, 28, 25, 0.35);
+      --avocado:      #5a8a1f;
+      --font-sans:    "LINE Seed JP", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-display: "Nanum Pen Script", "Iowan Old Style", Georgia, serif;
+    }
+
+    /* Dark theme — deep navy paper, warm cream ink. */
+    :root[data-theme="dark"] {
+      --paper:        #15202B;
+      --paper-dim:    #1c2a38;
+      --ink:          #f4ede0;
+      --ink-soft:     #b9b2a0;
+      --muted:        #6a7585;
+      --rule:         rgba(244, 237, 224, 0.10);
+      --rule-strong:  rgba(244, 237, 224, 0.32);
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+
+    body {
+      position: relative;
+      margin: 0;
+      padding: 14px 18px 20px;
+      width: 280px;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--ink);
+      background: var(--paper);
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+    }
+
+    /* Atmospheric shadow texture. Source PNG is 5000×2810 — many times
+       larger than the popup. Rendered as a background-image at an explicit
+       reasonable scale (~600px wide) so the texture's features stay
+       visible rather than getting upscaled into mush. background-size
+       cover would still upscale; the 600px fixed size keeps natural detail.
+       Hides the underlying <img> tag since we're using CSS to render. */
+    .page-shadow {
+      display: none;
+    }
+    body::before {
+      content: '';
+      /* position:fixed (not absolute) so the pseudo-element is genuinely
+         outside layout flow — Chrome extension popups auto-size to body
+         content, and absolute children apparently still contribute. Fixed
+         doesn't. Anchored to popup top-left, rendered at a stable 900px
+         tall regardless of popup height; shorter popup states just clip
+         the bottom naturally. */
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 280px;
+      height: 600px;
+      background-image: url('assets/textures/shadowportrait.png');
+      background-size: cover;
+      background-position: top center;
+      background-repeat: no-repeat;
+      opacity: 0.10;
+      pointer-events: none;
+      mix-blend-mode: multiply;
+      z-index: 0;
+    }
+    :root[data-theme="dark"] body::before { opacity: 0.20; }
+    :root[data-theme="dark"] .page-shadow { opacity: 0.16; }
+
+    /* Everything except the shadow lives above it. */
+    body > *:not(.page-shadow) { position: relative; z-index: 1; }
+
+    /* Smooth fade between themes. */
+    body, .state-card, .theme-toggle, .popup-unsupported {
+      transition: background-color 280ms ease, color 280ms ease, border-color 280ms ease;
+    }
+
+    /* Wordmark — full container width, modest vertical margin. */
+    .popup-head {
+      display: block;
+      margin: 0 0 14px;
+    }
+    .popup-head img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* State card — flat. The entire card IS the toggle. */
+    .state-card {
+      display: block;
+      width: 100%;
+      padding: 24px 18px 22px;
+      font-family: var(--font-sans);
+      text-align: center;
+      cursor: pointer;
+      border: 1.5px solid var(--ink);
+      background: var(--paper);
+      color: var(--ink);
+    }
+    .state-card.on  { background: var(--avocado); color: var(--paper); border-color: var(--avocado); }
+    .state-card.off { background: var(--paper-dim); color: var(--ink-soft); border-color: var(--rule-strong); border-style: dashed; }
+
+    .state-eyebrow {
+      display: block;
+      font-family: var(--font-sans);
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: lowercase;
+      font-weight: 700;
+      opacity: 0.7;
+      margin-bottom: 6px;
+    }
+    .state-word {
+      display: block;
+      font-family: var(--font-display);
+      font-size: 64px;
+      line-height: 0.95;
+      font-weight: 400;
+      margin: 0;
+    }
+    .state-context {
+      display: block;
+      font-family: var(--font-sans);
+      font-size: 12px;
+      margin-top: 8px;
+      opacity: 0.85;
+      word-break: break-all;
+    }
+    .state-domain { font-weight: 700; }
+
+    /* Theme toggle — sits below the state card as a normal flow
+       element. Small, centered chip. Toggles between "dark" (in
+       light mode) and "light" (in dark mode). */
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 12px auto 0;
+      width: 30px;
+      height: 26px;
+      padding: 4px 6px;
+      background: transparent;
+      border: 1px solid var(--rule-strong);
+      color: var(--ink-soft);
+      cursor: pointer;
+      transition: color 160ms ease, border-color 160ms ease;
+    }
+    .theme-toggle:hover { color: var(--ink); border-color: var(--ink); }
+    .theme-toggle img {
+      width: 16px;
+      height: 16px;
+      display: block;
+      object-fit: contain;
+    }
+    /* Show the sun in dark mode (click → go light) and the moon in
+       light mode (click → go dark). Default state = light mode. */
+    .theme-toggle .theme-icon-sun  { display: none; }
+    :root[data-theme="dark"] .theme-toggle .theme-icon-sun  { display: block; }
+    :root[data-theme="dark"] .theme-toggle .theme-icon-moon { display: none; }
+
+    /* Tool row — a horizontal row of small icon buttons sitting beside the
+       theme toggle. Designed to hold a few "open subview" affordances
+       (saves, future settings). Each button is a square chip with a tiny
+       icon and a quiet hover lift. */
+    .popup-tools {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .popup-tools .theme-toggle { margin: 0; }
+    .popup-tool-btn {
+      width: 30px;
+      height: 26px;
+      padding: 4px 6px;
+      background: transparent;
+      border: 1px solid var(--rule-strong);
+      color: var(--ink-soft);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 160ms ease, border-color 160ms ease;
+    }
+    .popup-tool-btn:hover { color: var(--ink); border-color: var(--ink); }
+    .popup-tool-btn img { width: 16px; height: 16px; display: block; object-fit: contain; }
+    .popup-tool-btn svg { width: 14px; height: 14px; display: block; }
+
+    /* Settings subview content — same subview-head as saves, plus styled
+       form rows. Each row is "label on left, control on right". */
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px dotted var(--rule);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row-label {
+      font-family: var(--font-sans);
+      font-size: 12px;
+      color: var(--ink);
+      flex: 1;
+    }
+    .settings-row-hint {
+      display: block;
+      font-family: var(--font-sans);
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+    .settings-select {
+      font-family: var(--font-sans);
+      font-size: 12px;
+      padding: 4px 22px 4px 8px;
+      border: 1px solid var(--rule-strong);
+      background: var(--paper);
+      color: var(--ink);
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%),
+                        linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%);
+      background-position: calc(100% - 11px) 50%, calc(100% - 7px) 50%;
+      background-size: 4px 4px, 4px 4px;
+      background-repeat: no-repeat;
+      max-width: 130px;
+    }
+    .settings-select:focus { outline: 1px solid var(--ink); }
+    .install-id {
+      padding: 4px 0;
+      background: none;
+      border: none;
+      border-bottom: 1px dotted var(--rule-strong);
+      font-family: var(--font-mono, ui-monospace, monospace);
+      font-size: 10px;
+      color: var(--ink-soft);
+      cursor: copy;
+      text-align: left;
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .install-id:hover { color: var(--ink); border-bottom-color: var(--ink); }
+
+    /* Subview pattern — used by saves now, future settings later. Each
+       subview has a head (back link + title) and its own content area. */
+    .subview-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--rule);
+      margin-bottom: 12px;
+    }
+    .subview-back {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 4px 6px 4px 0;
+      font-family: var(--font-sans);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: lowercase;
+      font-weight: 700;
+      color: var(--muted);
+      transition: color 160ms ease;
+    }
+    .subview-back:hover { color: var(--ink); }
+    .subview-title {
+      flex: 1;
+      margin: 0;
+      font-family: var(--font-sans);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: lowercase;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .popup-hint {
+      margin: 10px 0 0;
+      font-family: var(--font-sans);
+      font-size: 10px;
+      color: var(--muted);
+      line-height: 1.5;
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+
+    /* Unsupported state replaces the card. */
+    .popup-unsupported {
+      padding: 36px 18px;
+      text-align: center;
+      font-family: var(--font-display);
+      font-size: 22px;
+      color: var(--ink-soft);
+      line-height: 1.3;
+      border: 1.5px dashed var(--rule-strong);
+      background: var(--paper-dim);
+    }
+
+    /* ---- Auth (login + signed-in state) ---- */
+    .auth-section {
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--rule);
+    }
+    /* Signed-in chip */
+    .auth-info { display: flex; flex-direction: column; gap: 6px; }
+    .auth-info-line {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .auth-info-email {
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .auth-info-plan {
+      font-family: var(--font-sans);
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: lowercase;
+      font-weight: 700;
+      color: var(--avocado);
+      flex-shrink: 0;
+    }
+    /* Usage indicator: a small ring whose stroke fills as the user
+       consumes credits. Empty ring = full bank; complete ring = used up.
+       Label reads simply "usage" — no numbers, no AI-app vibes. */
+    .auth-info-usage {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .usage-ring {
+      width: 28px;
+      height: 28px;
+      transform: rotate(-90deg); /* start fill at 12 o'clock */
+      flex-shrink: 0;
+    }
+    .usage-ring-bg {
+      fill: none;
+      stroke: var(--rule);
+      stroke-width: 3;
+    }
+    .usage-ring-fill {
+      fill: none;
+      stroke: var(--avocado);
+      stroke-width: 3;
+      stroke-linecap: round;
+      /* circumference = 2*PI*r where r=7 → ~43.98. start fully-empty
+         (offset == circumference) and reveal as fill increases. */
+      stroke-dasharray: 43.98;
+      stroke-dashoffset: 43.98;
+      transition: stroke-dashoffset 280ms ease;
+    }
+    .usage-label-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      line-height: 1.1;
+    }
+    .usage-label {
+      font-family: var(--font-sans);
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: lowercase;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .usage-sublabel {
+      font-family: var(--font-sans);
+      font-size: 9px;
+      letter-spacing: 0.02em;
+      color: var(--muted);
+      opacity: 0.7;
+    }
+    .auth-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .auth-upgrade {
+      padding: 6px 12px;
+      font-family: var(--font-sans);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: lowercase;
+      font-weight: 700;
+      background: var(--avocado);
+      color: var(--paper);
+      border: 1.5px solid var(--avocado);
+      cursor: pointer;
+      transition: filter 160ms ease, transform 120ms ease;
+    }
+    .auth-upgrade:hover { filter: brightness(0.92); }
+    .auth-upgrade:active { transform: translateY(1px); }
+    .auth-signout {
+      padding: 4px 10px;
+      font-family: var(--font-sans);
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: lowercase;
+      font-weight: 700;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--rule-strong);
+      cursor: pointer;
+      transition: color 160ms ease, border-color 160ms ease;
+    }
+    .auth-signout:hover { color: var(--ink); border-color: var(--ink); }
+
+    /* Annotate button — one-shot "scan this page" action that wraps
+       interesting terms with hoverable wikilinks. Mid-prominence: more
+       weight than the theme toggle, less than the state card. */
+    .annotate-btn {
+      display: block;
+      width: 100%;
+      margin: 12px 0 0;
+      padding: 11px 14px;
+      font-family: var(--font-sans);
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: lowercase;
+      font-weight: 700;
+      background: transparent;
+      color: var(--ink);
+      border: 1.5px solid var(--ink);
+      cursor: pointer;
+      transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+    }
+    .annotate-btn:hover:not([disabled]) {
+      background: var(--ink);
+      color: var(--paper);
+    }
+    .annotate-btn[disabled] { cursor: progress; opacity: 0.65; }
+    .annotate-btn.success {
+      border-color: var(--avocado);
+      color: var(--avocado);
+      background: transparent;
+    }
+    .annotate-btn.error {
+      border-color: #c33;
+      color: #c33;
+      background: transparent;
+    }
+
+    /* Saves list — Plus feature. Lives inside the saves subview now,
+       reached via the star icon in the popup tools row. */
+    .saves-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .saves-item {
+      position: relative;
+      padding: 8px 24px 8px 0;
+      border-bottom: 1px dotted var(--rule);
+      cursor: pointer;
+      transition: background-color 120ms ease;
+    }
+    .saves-item:last-child { border-bottom: none; }
+    .saves-item:hover { background: var(--paper-dim); }
+    .saves-item-title {
+      display: block;
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1.3;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .saves-item-source {
+      display: block;
+      font-family: var(--font-sans);
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .saves-item-remove {
+      position: absolute;
+      top: 50%;
+      right: 0;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      font-size: 14px;
+      line-height: 1;
+      color: var(--muted);
+      opacity: 0;
+      transition: opacity 120ms ease, color 120ms ease;
+    }
+    .saves-item:hover .saves-item-remove { opacity: 1; }
+    .saves-item-remove:hover { color: #c33; }
+    .saves-empty {
+      font-family: var(--font-sans);
+      font-size: 11px;
+      color: var(--muted);
+      font-style: italic;
+      padding: 8px 0;
+    }
+
+    /* Tiny footer — privacy + version link, set apart from the
+       theme toggle to keep the main controls visually centered. */
+    .popup-footer {
+      margin: 14px 0 0;
+      text-align: center;
+      font-family: var(--font-sans);
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: lowercase;
+      font-weight: 700;
+      color: var(--muted);
+    }
+    .popup-footer a {
+      color: var(--muted);
+      text-decoration: none;
+      border-bottom: 1px dotted var(--rule-strong);
+    }
+    .popup-footer a:hover { color: var(--ink-soft); border-bottom-color: var(--ink-soft); }
+  </style>
+</head>
+<body>
+  <img class="page-shadow" src="assets/textures/shadow.png" alt="" aria-hidden="true">
+
+  <header class="popup-head">
+    <img src="assets/handdrawn-37.svg" alt="portaltext">
+  </header>
+
+  <section id="mainView">
+  <!-- Identity chip: portaltext is account-less — this shows the silent
+       anon identity's plan + usage ring, populated in popup.js from
+       chrome.storage.local["authToken"] + a /auth/me probe. -->
+  <section class="auth-section" id="auth-section">
+    <!-- Logged-in: account chip -->
+    <div class="auth-info" id="auth-info" hidden>
+      <div class="auth-info-line">
+        <span class="auth-info-email" id="auth-email-display">…</span>
+        <span class="auth-info-plan" id="auth-plan-display">free</span>
+      </div>
+      <div class="auth-info-usage" id="auth-usage-display">
+        <svg class="usage-ring" viewBox="0 0 18 18" aria-hidden="true">
+          <circle class="usage-ring-bg" cx="9" cy="9" r="7"></circle>
+          <circle class="usage-ring-fill" id="auth-usage-fill" cx="9" cy="9" r="7"></circle>
+        </svg>
+        <div class="usage-label-stack">
+          <span class="usage-label">usage</span>
+          <span class="usage-sublabel">refills every 24hrs</span>
+        </div>
+      </div>
+      <div class="auth-actions">
+        <button class="auth-upgrade" id="auth-upgrade" type="button" hidden>Upgrade to Plus →</button>
+      </div>
+    </div>
+
+  </section>
+
+  <button class="state-card" id="toggle" type="button" hidden>
+    <span class="state-eyebrow">portaltext is</span>
+    <span class="state-word" id="state-word">on</span>
+    <span class="state-context">for <span class="state-domain" id="domain">…</span></span>
+  </button>
+
+  <button class="annotate-btn" id="annotateBtn" type="button" hidden>
+    <span class="annotate-label">Annotate this page</span>
+  </button>
+
+  <p class="popup-unsupported" id="unsupported" hidden>
+    Not available on this kind of page.
+  </p>
+
+  <div class="popup-tools" id="popupTools">
+    <button class="popup-tool-btn" id="savesNavBtn" type="button" aria-label="Saved tooltips" title="Saved tooltips" hidden>
+      <img src="assets/handdrawn-20.svg" alt="" aria-hidden="true">
+    </button>
+    <button class="popup-tool-btn" id="settingsNavBtn" type="button" aria-label="Settings" title="Settings">
+      <img src="assets/handdrawn-43.svg" alt="" aria-hidden="true">
+    </button>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle theme">
+      <img class="theme-icon theme-icon-moon" src="assets/handdrawn-42.svg" alt="" aria-hidden="true">
+      <img class="theme-icon theme-icon-sun" src="assets/handdrawn-41.svg" alt="" aria-hidden="true">
+    </button>
+  </div>
+
+  <p class="popup-footer">
+    <a href="https://portaltext.com/privacy" target="_blank" rel="noopener">Privacy</a>
+  </p>
+  </section>
+
+  <section id="savesView" hidden>
+    <header class="subview-head">
+      <button class="subview-back" id="savesBackBtn" type="button">← back</button>
+      <h2 class="subview-title">Saved</h2>
+    </header>
+    <ul class="saves-list" id="savesList"></ul>
+  </section>
+
+  <section id="settingsView" hidden>
+    <header class="subview-head">
+      <button class="subview-back" id="settingsBackBtn" type="button">← back</button>
+      <h2 class="subview-title">Settings</h2>
+    </header>
+    <div class="settings-row">
+      <div class="settings-row-label">
+        Tooltip language
+        <span class="settings-row-hint">All summaries will be written in this language.</span>
+      </div>
+      <select class="settings-select" id="languageSelect">
+        <option value="auto">Auto</option>
+        <option value="en">English</option>
+        <option value="es">Español</option>
+        <option value="fr">Français</option>
+        <option value="de">Deutsch</option>
+        <option value="it">Italiano</option>
+        <option value="pt">Português</option>
+        <option value="nl">Nederlands</option>
+        <option value="pl">Polski</option>
+        <option value="ru">Русский</option>
+        <option value="tr">Türkçe</option>
+        <option value="ar">العربية</option>
+        <option value="hi">हिन्दी</option>
+        <option value="ja">日本語</option>
+        <option value="ko">한국어</option>
+        <option value="zh-CN">中文（简体）</option>
+        <option value="zh-TW">中文（繁體）</option>
+      </select>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-label">
+        Install ID
+        <span class="settings-row-hint">Your anonymous identity. Click to copy — needed for support requests and supporter upgrades.</span>
+      </div>
+      <button class="install-id" id="installIdEl" type="button" title="Click to copy">…</button>
+    </div>
+  </section>
+
+  <script src="popup.js"></script>
+</body>
+</html>

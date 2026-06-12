@@ -1,0 +1,29 @@
+{
+  "name": "portaltext",
+  "version": "0.3.0",
+  "description": "A free and open source LLM-enabled augmentation to hypertext. Hover any link to see how it connects to the page you're on.",
+  "type": "module",
+  "private": true,
+  "homepage": "https://github.com/alaskahoffman/portaltext",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alaskahoffman/portaltext.git"
+  },
+  "license": "AGPL-3.0-only",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --env-file=.env server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@mozilla/readability": "^0.5.0",
+    "better-sqlite3": "^12.10.0",
+    "jsdom": "^24.0.0",
+    "linkedom": "^0.18.0",
+    "openai": "^6.39.0",
+    "sharp": "^0.34.5"
+  }
+}

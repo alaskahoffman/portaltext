@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Welcome to portaltext</title>
+<link rel="icon" type="image/svg+xml" href="/assets/portalcatmini.svg" />
+<link rel="apple-touch-icon" sizes="128x128" href="/assets/portalcatmini128.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@400;700;800&family=Pirata+One&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* Same token system as /staging so the welcome page feels native. */
+:root {
+  --white: #ffffff;
+  --white-dim: #f5f5f5;
+  --ink: #1c1c19;
+  --ink-soft: #4a4a44;
+  --muted: #8a8a82;
+  --rule: rgba(28, 28, 25, 0.12);
+  --rule-strong: rgba(28, 28, 25, 0.4);
+  --lime: #A4E22B;
+  --lime-2: #B6EC54;
+  --lime-deep: #6FA01B;
+  --lime-ink: #2C4810;
+  --sans: "LINE Seed JP", -apple-system, BlinkMacSystemFont, sans-serif;
+  --display: "LINE Seed JP", -apple-system, sans-serif;
+  --bl: "Pirata One", "LINE Seed JP", serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+:root[data-theme="dark"] {
+  --white: #15202B;
+  --white-dim: #1c2a38;
+  --ink: #f4ede0;
+  --ink-soft: #b9b2a0;
+  --muted: #98a1ae;
+  --rule: rgba(244, 237, 224, 0.10);
+  --rule-strong: rgba(244, 237, 224, 0.32);
+  --lime: oklch(0.68 0.155 128);
+  --lime-2: oklch(0.74 0.15 128);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--white);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color 280ms ease, color 280ms ease;
+  overflow-x: hidden;
+}
+a { color: var(--ink); text-decoration: none; }
+.bl { font-family: var(--bl); font-weight: 400; letter-spacing: 0.012em; }
+
+/* ==== tree-shadow background — ported from /staging ==== */
+.tree-shadow {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  --opacity-front: 0.14;
+  --opacity-back:  0.07;
+  --blur: 0px;
+  --tone: brightness(1);
+  --blend: multiply;
+}
+.tree-shadow__layer {
+  position: absolute;
+  inset: -8%;
+  background-image: url("/assets/textures/shadow.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  mix-blend-mode: var(--blend);
+  will-change: transform;
+  transform-origin: 50% 0%;
+}
+.tree-shadow__layer--back {
+  opacity: var(--opacity-back);
+  transform: scaleX(-1) scale(1.22) rotate(3.5deg);
+  filter: blur(calc(var(--blur) + 2.4px)) var(--tone);
+}
+.tree-shadow__layer--front {
+  opacity: var(--opacity-front);
+  transform: scale(1.06) rotate(-1.2deg);
+  filter: blur(var(--blur)) var(--tone);
+}
+.tree-shadow__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 120% at 50% 38%,
+              rgba(0,0,0,0) 55%, rgba(40,38,33,0.05) 100%);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+:root[data-theme="dark"] .tree-shadow {
+  --opacity-front: 0.42;
+  --opacity-back:  0.26;
+}
+/* All layout content rides above the fixed tree-shadow layer. */
+.nav, header.hero, main, footer.foot { position: relative; z-index: 1; }
+
+/* ==== nav ==== */
+.nav {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 40px;
+  background: var(--white);
+  border-bottom: 1px solid var(--rule);
+}
+.nav-brand img { height: 40px; width: auto; display: block; }
+.nav-actions { display: flex; gap: 10px; align-items: center; }
+.theme-toggle {
+  width: 30px; height: 30px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 1px solid var(--rule-strong);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+.theme-toggle:hover { color: var(--ink); border-color: var(--ink); }
+.theme-icon {
+  width: 16px; height: 16px;
+  background: currentColor;
+  -webkit-mask: var(--theme-icon, url('/assets/handdrawn-42.svg')) center / contain no-repeat;
+  mask: var(--theme-icon, url('/assets/handdrawn-42.svg')) center / contain no-repeat;
+}
+:root[data-theme="dark"] .theme-icon { --theme-icon: url('/assets/handdrawn-41.svg'); }
+
+/* ==== layout ==== */
+.wrap { max-width: 880px; margin: 0 auto; padding: 0 32px; }
+.wrap-wide { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+
+/* ==== hero ==== */
+.hero {
+  padding: 96px 0 80px;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+}
+.hero-marker {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--lime-deep);
+  margin-bottom: 18px;
+  text-transform: lowercase;
+}
+.hero h1 {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(40px, 5.4vw, 72px);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  margin: 0 0 22px;
+  color: var(--ink);
+}
+.hero h1 .bl { color: var(--lime-deep); font-size: 1.06em; }
+.hero p {
+  font-size: 18px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  max-width: 580px;
+  margin: 0;
+}
+/* ==== capability sections ==== */
+.cap {
+  padding: 80px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.cap:last-of-type { border-bottom: none; }
+.cap-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 1.5fr;
+  gap: 56px;
+  align-items: start;
+}
+@media (max-width: 760px) {
+  .cap-grid { grid-template-columns: 1fr; gap: 32px; }
+}
+.cap h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(26px, 3vw, 36px);
+  line-height: 1.1;
+  letter-spacing: -0.022em;
+  margin: 0 0 14px;
+  color: var(--ink);
+}
+.cap-desc {
+  font-size: 15px;
+  color: var(--ink-soft);
+  line-height: 1.65;
+  margin: 0 0 14px;
+}
+.cap-instruction {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
+  padding: 6px 12px;
+  background: rgba(164,226,43,0.10);
+  border: 1px dashed var(--lime-deep);
+}
+.cap-plus-tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--lime-deep);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--lime-deep);
+  padding: 2px 7px;
+  margin-left: 8px;
+  vertical-align: 2px;
+}
+
+/* Demo content card — lime acetate film on paper, same treatment as the
+   thesis-card and Plus tier on /staging. A translucent green gradient
+   carries the "film over white" feel, a diagonal sheen catches light at
+   the top-left, and an inset white edge keeps the rim crisp. */
+.demo-card {
+  position: relative;
+  border-radius: 14px;
+  padding: 28px 30px;
+  background: linear-gradient(135deg, rgba(176,236,84,0.46), rgba(120,195,45,0.26));
+  border: 1px solid rgba(255,255,255,0.7);
+  box-shadow:
+    0 30px 70px -34px rgba(40,60,10,0.26),
+    inset 0 1px 1px rgba(255,255,255,0.85);
+  overflow: hidden;
+}
+.demo-card::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(235deg, rgba(255,255,255,0.5), rgba(255,255,255,0) 26%);
+}
+.demo-card > * { position: relative; z-index: 1; }
+:root[data-theme="dark"] .demo-card {
+  background: linear-gradient(135deg, rgba(164,226,43,0.30), rgba(90,150,30,0.20));
+}
+:root[data-theme="dark"] .demo-card::before { opacity: 0.3; }
+.demo-card p { margin: 0 0 12px; font-size: 16px; line-height: 1.7; color: var(--ink); }
+.demo-card p:last-child { margin-bottom: 0; }
+.demo-card a {
+  color: var(--lime-deep);
+  border-bottom: 1px dotted rgba(111,160,27,0.5);
+  padding-bottom: 1px;
+  transition: border-color 160ms ease;
+}
+.demo-card a:hover { border-bottom-color: var(--lime-deep); }
+
+/* Image demo */
+.demo-image {
+  display: block;
+  width: 100%;
+  max-width: 380px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+}
+.demo-image img { width: 100%; height: auto; display: block; }
+
+/* Highlight section — same lime acetate film as the demo cards. */
+.highlight-passage {
+  position: relative;
+  font-family: var(--display);
+  font-size: 17px;
+  line-height: 1.85;
+  color: var(--ink);
+  padding: 26px 32px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(176,236,84,0.46), rgba(120,195,45,0.26));
+  border: 1px solid rgba(255,255,255,0.7);
+  box-shadow:
+    0 30px 70px -34px rgba(40,60,10,0.26),
+    inset 0 1px 1px rgba(255,255,255,0.85);
+  overflow: hidden;
+}
+.highlight-passage::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(235deg, rgba(255,255,255,0.5), rgba(255,255,255,0) 26%);
+}
+.highlight-passage > * { position: relative; z-index: 1; }
+:root[data-theme="dark"] .highlight-passage {
+  background: linear-gradient(135deg, rgba(164,226,43,0.30), rgba(90,150,30,0.20));
+}
+:root[data-theme="dark"] .highlight-passage::before { opacity: 0.3; }
+.highlight-passage em { font-style: italic; color: var(--ink-soft); }
+
+/* Generic GIF/screenshot placeholder used in each capability — user
+   will replace the data-src empty <div> with a real asset later. */
+.media-frame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 2px dashed var(--rule-strong);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-align: center;
+  padding: 14px;
+  margin-top: 16px;
+}
+
+/* ==== footer ==== */
+.foot {
+  padding: 40px 0 60px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.foot a { color: var(--muted); border-bottom: 1px dotted var(--rule-strong); }
+.foot a:hover { color: var(--ink); }
+@media (max-width: 560px) {
+  .foot { flex-direction: column; gap: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Tree-shadow background — sway-only canopy motion (the flutter
+     filter was the dominant GPU cost on /staging, so welcome uses the
+     same simpler treatment). Sits behind everything, never clickable. -->
+<div class="tree-shadow" aria-hidden="true">
+  <div class="tree-shadow__layer tree-shadow__layer--back" id="ts-back"></div>
+  <div class="tree-shadow__layer tree-shadow__layer--front" id="ts-front"></div>
+  <div class="tree-shadow__vignette"></div>
+</div>
+<script>
+/* Canopy sway via cheap GPU transforms. No SVG filters, no per-frame
+   compositing cost beyond two translate/rotate writes. Suspends when
+   the tab is hidden; respects prefers-reduced-motion. */
+(function () {
+  const front = document.getElementById("ts-front");
+  const back  = document.getElementById("ts-back");
+  if (!front || !back) return;
+  const P = window.TreeShadow = window.TreeShadow || {};
+  P.windStrength = P.windStrength ?? 2.0;
+  P.windSpeed    = P.windSpeed    ?? 1.9;
+  P.enabled      = P.enabled      ?? true;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const BASE_BACK  = "scaleX(-1) scale(1.22) rotate(3.5deg)";
+  const BASE_FRONT = "scale(1.06) rotate(-1.2deg)";
+  const start = performance.now();
+  function frame(now) {
+    const t = (now - start) / 1000;
+    const sp = P.windSpeed;
+    const amp = P.windStrength;
+    const swayF = (5.5 * Math.sin(t * 0.32 * sp) + 2.0 * Math.sin(t * 0.83 * sp)) * amp;
+    const rotF  = (0.45 * Math.sin(t * 0.26 * sp)) * amp;
+    const swayB = (10 * Math.sin(t * 0.21 * sp + 0.5) + 3 * Math.sin(t * 0.55 * sp)) * amp;
+    const rotB  = (0.8 * Math.sin(t * 0.17 * sp + 0.4)) * amp;
+    front.style.transform = `${BASE_FRONT} translate3d(${swayF.toFixed(2)}px, ${(swayF*0.18).toFixed(2)}px, 0) rotate(${rotF.toFixed(3)}deg)`;
+    back.style.transform  = `${BASE_BACK} translate3d(${swayB.toFixed(2)}px, ${(swayB*0.2).toFixed(2)}px, 0) rotate(${rotB.toFixed(3)}deg)`;
+    if (P.enabled && !reduce && !document.hidden) requestAnimationFrame(frame);
+  }
+  if (reduce) { front.style.transform = BASE_FRONT; back.style.transform = BASE_BACK; }
+  else { requestAnimationFrame(frame); }
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && P.enabled && !reduce) requestAnimationFrame(frame);
+  });
+})();
+</script>
+
+<nav class="nav">
+  <a href="/" class="nav-brand"><img src="/assets/handdrawn-37.svg" alt="portaltext" /></a>
+  <div class="nav-actions">
+    <button class="theme-toggle js-theme-toggle" type="button" aria-label="Switch theme">
+      <span class="theme-icon" aria-hidden="true"></span>
+    </button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-marker">welcome</div>
+    <h1>You're in.<br />Hover <span class="bl">anything</span>.</h1>
+    <p>portaltext is now active in your browser. The sections below show every way the extension can surface context for what you're reading. Try each one right here on this page — your tooltips light up as you hover.</p>
+  </div>
+</header>
+
+<main>
+
+  <!-- ==== Hover any link ==== -->
+  <section class="cap" id="cap-links">
+    <div class="wrap">
+      <div class="cap-grid">
+        <div class="cap-side">
+          <h2>Hover any link.</h2>
+          <p class="cap-desc">Move your cursor over a link, wait a beat, and a summary opens — written by an AI that reads the linked page <em>and</em> the page you're already on, then stitches them together.</p>
+          <span class="cap-instruction">try: hover a name below</span>
+        </div>
+        <div class="cap-main">
+          <div class="demo-card">
+            <p><a href="https://en.wikipedia.org/wiki/Jorge_Luis_Borges">Jorge Luis Borges</a> spent his last decade nearly blind, dictating his stories from memory. He once said reading is more important than writing — a sentiment <a href="https://en.wikipedia.org/wiki/Italo_Calvino">Italo Calvino</a> echoed in his own essays. Both belong to a strange lineage that runs through <a href="https://en.wikipedia.org/wiki/Hypertext_fiction">hypertext fiction</a>, books that fork at every junction, decades before the web.</p>
+          </div>
+          <div class="media-frame">[ gif placeholder — hover a link, summary appears ]</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==== Hover any image ==== -->
+  <section class="cap" id="cap-images">
+    <div class="wrap">
+      <div class="cap-grid">
+        <div class="cap-side">
+          <h2>Hover any image.</h2>
+          <p class="cap-desc">Same gesture, different content. Hover an image and you get a short caption-summary — the work, the artist, the period, what it means.</p>
+          <span class="cap-instruction">try: hover the painting</span>
+        </div>
+        <div class="cap-main">
+          <a class="demo-image" href="/assets/paintings/woman_with_a_cat_1950.12.1.jpg">
+            <img src="/assets/paintings/woman_with_a_cat_1950.12.1.jpg" alt="Renoir, Woman with a Cat" />
+          </a>
+          <div class="media-frame">[ gif placeholder — hover an image, caption appears ]</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==== Hover a PDF ==== -->
+  <section class="cap" id="cap-pdf">
+    <div class="wrap">
+      <div class="cap-grid">
+        <div class="cap-side">
+          <h2>Hover a <span class="bl">PDF</span>.</h2>
+          <p class="cap-desc">PDFs and other heavyweight pages need a little more help — portaltext reads what it can and surfaces a summary the same way it would for a regular page. A bigger lift, so it draws a little more from your daily allowance.</p>
+          <span class="cap-instruction">try: hover the PDF link</span>
+        </div>
+        <div class="cap-main">
+          <div class="demo-card">
+            <p>The classic example: <a href="https://arxiv.org/pdf/1706.03762">Attention Is All You Need (PDF, arXiv 1706.03762)</a> — the 2017 paper that introduced the Transformer architecture. Hover it and the tooltip reads the PDF directly.</p>
+          </div>
+          <div class="media-frame">[ gif placeholder — hover a PDF link, tooltip reads it ]</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==== Citations auto-detected ==== -->
+  <section class="cap" id="cap-citations">
+    <div class="wrap">
+      <div class="cap-grid">
+        <div class="cap-side">
+          <h2>Citations, auto-detected.</h2>
+          <p class="cap-desc">arXiv IDs, DOIs, PMIDs — portaltext recognizes academic citation patterns even when they're not wrapped in a link, and turns each one into a hoverable portal to the paper itself.</p>
+          <span class="cap-instruction">try: hover any identifier</span>
+        </div>
+        <div class="cap-main">
+          <div class="demo-card">
+            <p>The Transformer paper lives at <a href="https://arxiv.org/abs/1706.03762">arXiv:1706.03762</a>, and its 2024 follow-up at <a href="https://doi.org/10.48550/arXiv.2401.04088">DOI:10.48550/arXiv.2401.04088</a>. For biomedical work, try <a href="https://pubmed.ncbi.nlm.nih.gov/31735529/">PMID:31735529</a> — a study on nutritional psychiatry.</p>
+          </div>
+          <div class="media-frame">[ gif placeholder — citation auto-detection ]</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==== Multilingual ==== -->
+  <section class="cap" id="cap-language">
+    <div class="wrap">
+      <div class="cap-grid">
+        <div class="cap-side">
+          <h2>17 languages.</h2>
+          <p class="cap-desc">Summaries can be written in any of 17 languages, regardless of the source page's language. Set it once in the popup → Settings → Tooltip language, then everything from English Wikipedia to Spanish news reads in your chosen language.</p>
+          <span class="cap-instruction">try: change language in popup, then hover</span>
+        </div>
+        <div class="cap-main">
+          <div class="demo-card">
+            <p>Read about <a href="https://es.wikipedia.org/wiki/Jorge_Luis_Borges">Borges en español</a>, <a href="https://ja.wikipedia.org/wiki/%E5%AE%AE%E5%B4%8E%E9%A7%BF">宮崎駿 in Japanese</a>, or <a href="https://de.wikipedia.org/wiki/Walter_Benjamin">Walter Benjamin auf deutsch</a> — set your tooltip language and the summaries arrive in it.</p>
+          </div>
+          <div class="media-frame">[ gif placeholder — language switch in popup ]</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==== Highlight to make hoverable ==== -->
+  <section class="cap" id="cap-highlight">
+    <div class="wrap">
+      <div class="cap-grid">
+        <div class="cap-side">
+          <h2>Make <span class="bl">anything</span> a portal.</h2>
+          <p class="cap-desc">No link? Make one. Select any text on any page, right-click, and choose <em>"Make hoverable with portaltext"</em>. The selection becomes a portal you can hover for context — even on text that wasn't originally linked.</p>
+          <span class="cap-instruction">try: select a phrase below → right-click → "Make hoverable"</span>
+        </div>
+        <div class="cap-main">
+          <div class="highlight-passage">
+            <p>The longest river in the world, the Nile, runs north — a curiosity that puzzled travelers for centuries. Try selecting <em>"the Nile"</em>, or any phrase that catches your eye in this paragraph, right-click it, and turn it into a portal. The tooltip will arrive with the context, even without a link.</p>
+          </div>
+          <div class="media-frame">[ gif placeholder — text selection → right-click → make hoverable ]</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==== Annotate this page ==== -->
+  <section class="cap" id="cap-annotate">
+    <div class="wrap">
+      <div class="cap-grid">
+        <div class="cap-side">
+          <h2>Annotate this page.</h2>
+          <p class="cap-desc">Don't want to hunt for terms? Click <em>"Annotate this page"</em> in the popup and portaltext scans the whole article, wrapping every interesting term in a hoverable portal automatically. One click, a whole page of portals — it draws a little more from your daily allowance.</p>
+          <span class="cap-instruction">try: open the popup → Annotate this page</span>
+        </div>
+        <div class="cap-main">
+          <div class="media-frame">[ gif placeholder — annotate this page in action ]</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot wrap-wide">
+  <span>You're all set. Go read something.</span>
+  <span><a href="/">portaltext.com</a></span>
+</footer>
+
+<script>
+  /* Theme toggle — same persistence key as the marketing page so the
+     user's theme preference carries across both. */
+  const THEME_KEY = 'portaltext-theme';
+  const toggles = document.querySelectorAll('.js-theme-toggle');
+  function applyTheme(t) {
+    const theme = t === 'dark' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+    const next = theme === 'dark' ? 'light' : 'dark';
+    toggles.forEach(el => el.setAttribute('aria-label', 'Switch to ' + next + ' mode'));
+  }
+  try { applyTheme(localStorage.getItem(THEME_KEY) || 'light'); } catch {}
+  toggles.forEach(el => {
+    el.addEventListener('click', () => {
+      const next = (document.documentElement.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
+      applyTheme(next);
+      try { localStorage.setItem(THEME_KEY, next); } catch {}
+    });
+  });
+</script>
+
+</body>
+</html>

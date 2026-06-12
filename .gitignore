@@ -1,0 +1,22 @@
+node_modules/
+.env
+*.backup*.html
+.DS_Store
+.claude/
+signups.jsonl
+
+# Token usage log (per-deploy, regenerates)
+token-usage.jsonl
+
+# Local CWS build artifact (re-zipped per release)
+extension/portaltextchrome.zip
+extension/portaltext-*.zip
+
+# Account DB (sqlite + WAL/SHM sidecars)
+portaltext.db
+portaltext.db-wal
+portaltext.db-shm
+
+# Throwaway prototype scaffold — the real extension lives in extension/
+extension-code/
+store-assets/

@@ -1,0 +1,4884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>portaltext — contextualize the open web</title>
+<meta name="description" content="AI tooltips for every link on the web. Hover anything — articles, PDFs, citations — and get a grounded summary in place, without leaving the page. Free, no account needed." />
+<link rel="canonical" href="https://portaltext.com/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="portaltext" />
+<meta property="og:title" content="portaltext — contextualize the open web" />
+<meta property="og:description" content="AI tooltips for every link on the web. Hover anything and get a grounded summary in place. Free, no account needed." />
+<meta property="og:url" content="https://portaltext.com/" />
+<meta property="og:image" content="https://portaltext.com/assets/colorcatwide.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@145k4" />
+<meta name="twitter:title" content="portaltext — contextualize the open web" />
+<meta name="twitter:description" content="AI tooltips for every link on the web. Hover anything and get a grounded summary in place. Free, no account needed." />
+<meta name="twitter:image" content="https://portaltext.com/assets/colorcatwide.png" />
+<link rel="icon" type="image/svg+xml" href="/assets/portalcatmini.svg" />
+<link rel="apple-touch-icon" sizes="128x128" href="/assets/portalcatmini128.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=LINE+Seed+JP:wght@400;700;800&family=Pirata+One&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   Tokens
+   ============================================================ */
+:root {
+  --white:        #ffffff;   /* stark white */
+  --white-dim:    #f5f5f5;
+  --ink:          #1c1c19;
+  --ink-soft:     #4a4a44;
+  --muted:        #8a8a82;
+  --rule:         rgba(28, 28, 25, 0.12);
+  --rule-strong:  rgba(28, 28, 25, 0.4);
+  --avocado:      #5a8a1f;
+  --avocado-tint: rgba(198, 255, 74, 0.10);
+  --portaltext-link: #5a8a1f;
+  --portaltext-link-hover: #5a8a1f;
+
+  /* Font roles. The two sans-serifs (LINE Seed JP, Kosugi Maru) and
+     two handdrawn options (Dokdo, Nanum Pen Script) are all loaded
+     above. Swap the right-hand side of any role below to try a
+     different combo without touching the markup. */
+  --font-sans-1:   "LINE Seed JP", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --sans:    var(--font-sans-1);   /* UI: eyebrows, nav, buttons    */
+  --serif:   var(--font-sans-1);   /* body copy (paragraphs, demo)  */
+  --display: var(--font-sans-1);   /* headlines, signature moments  */
+}
+
+/* Headers using --display are LINE Seed JP; lift them to weight
+   800 so they have proper display presence (the previous Nanum
+   Pen Script default of 400 read fine because it was a script
+   face; LINE Seed JP at 400 reads thin). */
+.about-section h2,
+.install-section h2,
+.faq-section h2,
+.pricing-section h2,
+.demo-lede h3,
+.demo-passage h3,
+.block-demo .demo-passage h3,
+.thesis-mark .thesis-text,
+.block-h,
+.install-headline,
+.pricing-label,
+.section-title,
+.block-faq .faq-q,
+.faq-row-q,
+.price-name,
+.price-amount,
+.idea-text,
+.limit-text,
+.demo-counter,
+.popup-unsupported,
+h1:not(.hero-headline),
+h2, h3 {
+  font-weight: 800;
+}
+
+/* Dark theme — toggled via data-theme on <html>. Same layout,
+   same accents (avocado), inverted paper/ink. The shadow texture
+   blend mode flips from multiply to screen so it still subtly
+   lightens patches of the dark navy paper. */
+:root[data-theme="dark"] {
+  --white:        #15202B;   /* twitter night "paper" for body bg, knockouts */
+  --white-dim:    #1c2a38;
+  --ink:          #f4ede0;
+  --ink-soft:     #b9b2a0;
+  --muted:        #6a7585;
+  --rule:         rgba(244, 237, 224, 0.10);
+  --rule-strong:  rgba(244, 237, 224, 0.32);
+}
+:root[data-theme="dark"] .nav {
+  background: rgba(21, 32, 43, 0.92);
+}
+:root[data-theme="dark"] .tree-shadow {
+  /* Bumped opacities for the dark Twitter-night surface so the
+     multiply shadow still reads. Page bg (#15202B) is darker than
+     the design's reference (#38424f), so we lean harder. */
+  --opacity-front: 0.42;
+  --opacity-back:  0.26;
+}
+/* Smooth theme transition — fade colors over ~280ms when the
+   user flips the toggle so the swap feels intentional, not jarring.
+   Scoped to themeable properties; existing element transitions
+   (hover lifts, etc) are unaffected. */
+body,
+.nav,
+.masthead,
+.state-card,
+.theme-toggle,
+.popup-unsupported {
+  transition: background-color 280ms ease, color 280ms ease, border-color 280ms ease;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--white);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1.65;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+img { display: block; max-width: 100%; }
+button { font-family: inherit; cursor: pointer; }
+a { color: var(--ink); text-decoration: none; transition: color 160ms ease; }
+a:hover { color: var(--ink); }
+
+/* ============================================================
+   Layout primitives
+   ============================================================ */
+.wrap     { max-width: 1080px; margin: 0 auto; padding: 0 40px; }
+.wrap-tight { max-width: 720px;  margin: 0 auto; padding: 0 40px; }
+.wrap-wide  { max-width: 1280px; margin: 0 auto; padding: 0 40px; }
+
+.eyebrow {
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: none;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.serif-display {
+  font-family: var(--display);
+  font-weight: 400;
+  letter-spacing: -0.012em;
+  line-height: 1.05;
+}
+
+/* ============================================================
+   Navigation
+   ============================================================ */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* Match masthead padding exactly so the hand-off from masthead
+     (in the hero) to fixed nav (on scroll) is visually invisible. */
+  padding: 16px 40px;
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid var(--rule);
+  /* Opacity is driven directly from scroll position in JS so the
+     fade tracks the user's scroll velocity exactly — no time-based
+     transition that could lag behind a fast scroll. */
+  opacity: 0;
+  pointer-events: none;
+}
+.nav-actions { display: flex; align-items: center; gap: 14px; }
+.nav-brand {
+  display: flex;
+  align-items: center;
+}
+.nav-brand img {
+  height: 56px;
+  width: auto;
+  display: block;
+}
+/* Install nav CTA — hand-drawn rectangle (handdrawn-12) sits as the
+   button's background so the "Install →" label is naturally on top.
+   Stamp feel without the z-index headache. */
+.nav-cta {
+  display: inline-block;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  padding: 14px 28px;
+  background-image: url('/assets/handdrawn-38.svg');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: #2c4810;
+  transition: filter 160ms ease;
+}
+.nav-cta:hover { filter: brightness(0.88); }
+.nav-cta:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+
+/* ============================================================
+   Hero — editorial spread (NatGeo / zine vibe)
+   - Masthead row at top: issue meta left, install right
+   - Two-column body: oversized illustration bleeds off the LEFT
+     edge; headline + standfirst anchor the right side
+   - Page folio "001" bottom corner
+   ============================================================ */
+/* Outer scroll container. Its height defines how long the hero
+   stays pinned — 250vh gives ~150vh of pinned scroll while the
+   sticky .hero (100vh tall) holds in place. */
+.hero-pin {
+  position: relative;
+  height: 250vh;
+}
+.hero {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  min-height: auto;
+  /* No top padding — the masthead's brand needs to sit flush at
+     the viewport top so it occupies the exact same vertical slot
+     as the fixed nav that takes over once the hero scrolls away.
+     Hero-spread gets its own breathing room below the masthead. */
+  padding: 0 0 80px;
+  display: flex;
+  flex-direction: column;
+}
+.hero-spread { margin-top: 40px; }
+/* Each phase fills the hero-text area absolutely so the three
+   stack on top of one another. The cross-fade is JS-driven. */
+.hero-text {
+  position: relative;
+  min-height: 60vh;
+}
+.hero-phase {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 120px;
+  text-align: right;
+  opacity: 0;
+  transition: opacity 280ms ease;
+  pointer-events: none;
+}
+.hero-phase-1 { opacity: 1; }  /* wordmark visible on initial load */
+.hero-phase-2 { pointer-events: auto; }  /* let users click final content */
+.hero-wordmark-big {
+  height: clamp(160px, 22vw, 300px);
+  width: auto;
+  max-width: 100%;
+  display: block;
+}
+.hero-phase .hero-headline,
+.hero-phase .hero-sub {
+  margin: 0;
+  opacity: 1;  /* override any entrance animation, parent governs */
+  animation: none !important;
+}
+
+/* Masthead row */
+.masthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 40px;
+  margin-bottom: 48px;
+  border-bottom: 1px solid var(--rule);
+}
+.masthead-meta {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: none;
+  color: var(--muted);
+  font-weight: 500;
+  line-height: 1.8;
+}
+.masthead-meta span { display: block; }
+.masthead-meta span.lead { color: var(--ink); font-weight: 600; }
+.masthead-brand { display: inline-flex; align-items: center; }
+.masthead-brand img { height: 56px; width: auto; display: block; }
+.masthead-cta { display: flex; align-items: center; gap: 14px; }
+.theme-toggle {
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid var(--rule-strong);
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+.theme-toggle:hover { color: var(--ink); border-color: var(--ink); }
+/* Sun / moon icon for the theme toggle — a CSS mask so the doodle takes the
+   button's current text colour (legible in both light and dark nav). Light mode
+   shows the MOON (tap to go dark); dark mode shows the SUN (tap to go light). */
+.theme-icon {
+  width: 18px; height: 18px; display: block;
+  background: currentColor;
+  -webkit-mask: var(--theme-icon, url('/assets/handdrawn-42.svg')) center / contain no-repeat;
+  mask: var(--theme-icon, url('/assets/handdrawn-42.svg')) center / contain no-repeat;
+}
+:root[data-theme="dark"] .theme-icon { --theme-icon: url('/assets/handdrawn-41.svg'); }
+
+/* Two-column spread */
+.hero-spread {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 7fr 6fr;
+  gap: 60px;
+  align-items: center;
+  position: relative;
+}
+
+/* Left: oversized illustration bleeding off the left edge */
+.hero-illo {
+  position: relative;
+  padding-left: 0;
+  overflow: visible;
+}
+.hero-illo img {
+  width: 110%;
+  max-width: none;
+  height: auto;
+  transform: translateX(-12%);
+  display: block;
+}
+
+/* Right: editorial type column */
+.hero-text {
+  padding-right: 120px;
+  padding-left: 0;
+  text-align: right;
+}
+.hero-wordmark {
+  height: 180px;
+  width: auto;
+  display: inline-block;
+  margin: 0 0 10px;
+  max-width: 100%;
+}
+.hero-dateline {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: none;
+  color: var(--muted);
+  font-weight: 500;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--rule);
+}
+.hero-headline {
+  font-family: "LINE Seed JP", var(--font-sans-1);
+  font-size: clamp(64px, 8vw, 96px);
+  line-height: 0.95;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0 0 64px;
+  color: var(--ink);
+  text-align: right;
+}
+.hero-headline em {
+  font-style: normal;
+  color: var(--ink);
+  font-weight: 800;
+}
+.hero-sub {
+  font-family: var(--serif);
+  font-size: 20px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin: 0 0 0 auto;     /* push to the right edge of the column */
+  font-weight: 400;
+  max-width: 460px;
+}
+
+/* Page folio bottom-left, like a printed page number */
+.hero-folio {
+  position: absolute;
+  bottom: 24px;
+  left: 40px;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  color: var(--muted);
+  font-weight: 500;
+}
+.hero-folio-right {
+  position: absolute;
+  bottom: 24px;
+  right: 40px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  .hero { min-height: auto; padding: 40px 0 60px; }
+  .hero-spread { grid-template-columns: 1fr; gap: 32px; }
+  .hero-illo img { width: 90%; transform: translateX(-8%); }
+  .hero-text { padding: 0 32px; }
+  .hero-headline { font-size: clamp(48px, 11vw, 80px); }
+  .masthead { padding: 0 24px 16px; }
+  .hero-folio, .hero-folio-right { display: none; }
+}
+
+/* ============================================================
+   Hero entrance — page-load choreography.
+   Masthead drops in first, then cat drifts from the left, then
+   the editorial column staggers in (dateline → headline → sub).
+   After settling, the cat gets a continuous gentle sway so the
+   page never feels frozen. `translate`/`rotate` longhand so the
+   resting `transform: translateX(-12%)` on the cat is preserved.
+   ============================================================ */
+@keyframes hero-illo-in {
+  0%   { opacity: 0; translate: -90px 0; }
+  100% { opacity: 1; translate: 0 0;     }
+}
+@keyframes hero-text-in {
+  0%   { opacity: 0; translate: 0 26px; }
+  100% { opacity: 1; translate: 0 0;    }
+}
+@keyframes masthead-in {
+  0%   { opacity: 0; translate: 0 -10px; }
+  100% { opacity: 1; translate: 0 0;     }
+}
+
+.masthead {
+  opacity: 0;
+  animation: masthead-in 800ms ease-out 100ms forwards;
+}
+.hero-illo img {
+  opacity: 0;
+  animation: hero-illo-in 1400ms cubic-bezier(0.22, 1, 0.36, 1) 220ms forwards;
+}
+.hero-dateline,
+.hero-headline,
+.hero-sub {
+  opacity: 0;
+  animation: hero-text-in 1100ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.hero-dateline { animation-delay: 420ms; }
+.hero-headline { animation-delay: 580ms; }
+.hero-sub      { animation-delay: 780ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .masthead, .hero-illo img, .hero-dateline, .hero-headline, .hero-sub {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+/* ============================================================
+   Section base
+   ============================================================ */
+section { position: relative; }
+
+/* ============================================================
+   Main body — two-column flow under the hero. Each column stacks
+   its own blocks vertically with a generous gap. Heights vary by
+   content, so the columns naturally stagger.
+   ============================================================ */
+.content-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 160px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 80px 40px 240px;
+  align-items: start;
+}
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 140px;
+}
+/* Rhythm utilities. Base gap is 140px; these add or subtract from
+   that to vary breath between adjacent blocks. Used to couple an
+   ornament tightly to the block that follows (tight), or open up a
+   major section break (huge). */
+.col > .rhythm-tight { margin-top: -80px; }   /* effective ~60px  */
+.col > .rhythm-snug  { margin-top: -40px; }   /* effective ~100px */
+.col > .rhythm-wide  { margin-top: 60px;  }   /* effective ~200px */
+.col > .rhythm-huge  { margin-top: 120px; }   /* effective ~260px */
+@media (max-width: 900px) {
+  .content-2col { grid-template-columns: 1fr; gap: 0; padding: 120px 24px; }
+  .col { gap: 96px; }
+  .col + .col { margin-top: 96px; }
+  .col > .rhythm-tight,
+  .col > .rhythm-snug,
+  .col > .rhythm-wide,
+  .col > .rhythm-huge { margin-top: 0; }
+}
+
+/* Column-block: text-block (demo passage, pricing, idea, install, FAQ) */
+.block {
+  position: relative;
+}
+
+/* About-block intro text */
+.block-about .about-text {
+  font-family: var(--serif);
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin: 0;
+}
+.block-about .about-text em { font-style: italic; color: var(--ink); font-weight: 400; }
+
+/* Pure-whitespace block — just cream space to let a column breathe. */
+.block-blank { min-height: 180px; }
+.block-blank.tall { min-height: 320px; }
+
+/* Doodle block — small standalone hand-drawn ornament centered with
+   cream around it. Use for asterisks / stars / arrows / question marks
+   as page rest moments. */
+.block-doodle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 0;
+  opacity: 0.55;
+}
+.block-doodle img {
+  height: 56px;
+  width: auto;
+  transition: rotate 700ms cubic-bezier(0.34, 1.4, 0.64, 1),
+              scale  700ms cubic-bezier(0.34, 1.4, 0.64, 1);
+  will-change: rotate, scale;
+}
+.block-doodle.lg img { height: 120px; }
+.block-doodle.left  { justify-content: flex-start; padding-left: 12%; }
+.block-doodle.right { justify-content: flex-end;   padding-right: 12%; }
+
+/* Hover wobble — each doodle gets a slightly different micro-tilt so
+   the page rewards a curious cursor. Directional variants wobble away
+   from their column edge. */
+.block-doodle:hover img         { rotate: -8deg; scale: 1.08; }
+.block-doodle.left:hover img    { rotate: -12deg; }
+.block-doodle.right:hover img   { rotate:  12deg; }
+.block-doodle.feature:hover img { rotate:  6deg; scale: 1.06; }
+/* Feature variant — medium sized, centered, full opacity. Use when
+   the doodle is meant to read as a focal element rather than a faded
+   ornament in the margin. */
+.block-doodle.feature {
+  height: 10px;
+  opacity: 1;
+  padding: 0px 0;
+  justify-content: center;
+}
+.block-doodle.feature img { height: 100px; }
+
+/* Cat-half — free-floating grace note positioned absolutely against
+   its parent column. The TOP half hangs over the top-right corner of
+   the right column; the BOTTOM half emerges from the lower-left of
+   the left column. Together they read as a single cat traveling
+   diagonally through the spread, without eating column real estate. */
+.col { position: relative; }
+.block-cat-half {
+  position: absolute;
+  width: 220px;
+  pointer-events: none;
+  z-index: 2;
+}
+.block-cat-half img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.block-cat-half.top    { top: -56px;  right: -32px; }
+.block-cat-half.bottom { top: 56%;    left:  -32px; }
+@media (max-width: 900px) {
+  .block-cat-half { position: relative; width: 180px; top: auto; left: auto; right: auto; margin: 0 auto; }
+}
+.block-eyebrow {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: none;
+  color: var(--muted);
+  font-weight: 500;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+.block-h {
+  font-family: var(--display);
+  font-size: clamp(34px, 3.4vw, 48px);
+  line-height: 1.05;
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  margin: 0 0 28px;
+}
+.block-h em { font-style: italic; color: var(--ink); }
+
+/* Demo passage inside a column */
+.block-demo .demo-passage {
+  font-family: var(--serif);
+  font-size: 18px;
+  line-height: 1.75;
+  color: var(--ink);
+}
+.block-demo .demo-passage h3 {
+  font-family: var(--display);
+  font-size: clamp(32px, 3.4vw, 44px);
+  font-weight: 800;
+  letter-spacing: -0.018em;
+  line-height: 1.05;
+  margin: 0 0 6px;
+}
+.block-demo .demo-passage .byline {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+  margin: 0 0 28px;
+  font-weight: 500;
+}
+.block-demo .demo-passage p { margin: 0 0 18px; }
+.block-demo .demo-passage p:first-of-type::first-letter {
+  font-family: var(--display);
+  font-size: 4em;
+  float: left;
+  line-height: 0.85;
+  padding: 6px 12px 0 0;
+  color: var(--ink);
+  font-weight: 500;
+}
+.block-demo .demo-passage a.wikilink {
+  color: var(--avocado);
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(90, 138, 31, 0.55);
+  background-image: linear-gradient(var(--avocado), var(--avocado));
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0 2px;
+  padding-bottom: 1px;
+  transition: background-size 380ms cubic-bezier(0.7, 0, 0.3, 1),
+              color           220ms ease,
+              border-color    220ms ease;
+  cursor: pointer;
+}
+.block-demo .demo-passage a.wikilink:hover {
+  color: #3d5e16;
+  background-size: 100% 2px;
+  border-bottom-color: transparent;
+}
+
+/* Idea block — portal pair at column scale (no full-page bleed) */
+.block-idea {
+  background: rgba(198,255,74,0.04);
+  padding: 56px 32px;
+  text-align: center;
+}
+.block-idea .portal-pair {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+.block-idea .portal-pair img {
+  height: 130px;
+  width: auto;
+  flex-shrink: 0;
+  transition: translate 800ms cubic-bezier(0.22, 1, 0.36, 1),
+              rotate    800ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: translate, rotate;
+}
+.block-idea:hover .portal-pair img:first-of-type { translate: -14px 0; rotate: -10deg; }
+.block-idea:hover .portal-pair img:last-of-type  { translate:  14px 0; rotate:  10deg; }
+.block-idea .idea-text {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: clamp(22px, 2.6vw, 30px);
+  line-height: 1.35;
+  color: var(--ink);
+  margin: 24px 0 0;
+  font-weight: 400;
+}
+.block-idea .idea-text em { font-style: normal; color: var(--ink); }
+
+/* Install block in column */
+.block-install .install-stage {
+  margin: 12px 0 20px;
+}
+.block-install .install-browsers {
+  margin-top: 14px;
+}
+.block-install .callout { margin-top: 32px; max-width: none; }
+
+/* Pricing block in column */
+.block-pricing .pricing-list { margin: 0; }
+
+/* FAQ block in column — Q over A, simpler than the spread version */
+.block-faq .faq-q {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1.25;
+  color: var(--ink);
+  margin: 0 0 10px;
+  font-weight: 400;
+}
+.block-faq .faq-q .q-mark {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background-image: url('/assets/handdrawn-21.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  margin-right: 6px;
+  vertical-align: -2px;
+}
+.block-faq .faq-a {
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin: 0;
+}
+.block-faq .faq-item {
+  padding: 24px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.block-faq .faq-item:first-child { border-top: 1px solid var(--rule); }
+
+/* ============================================================
+   Magazine grid — each spread is a 12-col grid where text and
+   inset paintings occupy explicit cells with intentional empty
+   cells acting as whitespace. Mix sizes/positions so no two
+   spreads feel the same.
+   ============================================================ */
+.mag-grid {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  column-gap: 32px;
+  row-gap: 96px;
+  position: relative;
+}
+@media (max-width: 900px) {
+  .mag-grid { display: block; padding: 0 24px; }
+  .mag-grid > * { margin-bottom: 64px !important; grid-column: auto !important; grid-row: auto !important; }
+}
+
+/* Inset painting figure — taped to the page. Each instance gets its
+   own bleed/tilt/size class for an aleatoric scrapbook feel; no two
+   paintings sit the same way. */
+.inset-fig {
+  position: relative;
+  z-index: 1;
+  transform-origin: center;
+}
+/* Per-painting placement variants. Mix widths, horizontal offsets,
+   alignment, and rotation so each piece reads like it was set down by
+   hand and slightly off-grid. Bleed classes use viewport units so the
+   spill off the page edge is real regardless of column width. */
+.bleed-l {
+  width: calc(100% + 16vw);
+  margin-left: -16vw;
+  transform: rotate(-2.2deg);
+}
+.bleed-r {
+  width: calc(100% + 16vw);
+  align-self: flex-end;
+  margin-right: -16vw;
+  transform: rotate(1.8deg);
+}
+.tilt-snug  { width: 88%;   margin-left:  6%;    transform: rotate(2.4deg);   }
+.tilt-loose { width: calc(100% + 8vw); margin-left: -8vw; transform: rotate(-1.3deg); }
+.tilt-small { width: 70%;   align-self:   center; transform: rotate(-1.8deg);  margin-top: 8px; }
+.tilt-right { width: calc(100% + 6vw); align-self: flex-end; margin-right: -6vw; transform: rotate(2deg);  }
+.tilt-left  { width: calc(100% + 6vw); margin-left:  -6vw; transform: rotate(-2.6deg); }
+
+/* Columns need overflow:visible so a painting can spill past the
+   column edge without getting clipped. */
+.col { overflow: visible; }
+.inset-fig a {
+  display: block;
+  width: 100%;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+}
+
+.inset-fig img.painting {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: saturate(0.95);
+}
+
+/* Masking-tape overlay. Sits on top of the painting and overshoots
+   slightly so it reads like real tape sticking the print to the page.
+   pointer-events:none so the painting link beneath still gets hovers.
+   Uses `translate`/`rotate` longhand so the hover lift can animate
+   without clobbering the resting position. */
+.tape {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  z-index: 5;
+  transition: translate 550ms cubic-bezier(0.22, 1, 0.36, 1),
+              rotate    550ms cubic-bezier(0.22, 1, 0.36, 1),
+              filter    400ms ease;
+  will-change: translate, rotate;
+}
+.tape-h-top {
+  top: -24px;
+  left: 50%;
+  translate: -50% 0;
+  rotate: -2deg;
+  width: 56%;
+  height: auto;
+}
+.tape.tape-sm { width: 36%; }
+.tape-corner-tl {
+  top: -28px;
+  left: -28px;
+  width: 38%;
+  max-width: 160px;
+  height: auto;
+  rotate: -18deg;
+  transform-origin: center;
+}
+.tape-corner-tr {
+  top: -28px;
+  right: -28px;
+  width: 38%;
+  max-width: 160px;
+  height: auto;
+  rotate: 18deg;
+  transform-origin: center;
+}
+.tape-v-left {
+  top: 16%;
+  left: -24px;
+  width: auto;
+  height: 46%;
+  rotate: 2deg;
+}
+.tape-v-right {
+  top: 16%;
+  right: -24px;
+  width: auto;
+  height: 46%;
+  rotate: -2deg;
+}
+
+@media (max-width: 600px) {
+  .tape-corner-tl, .tape-corner-tr { max-width: 110px; }
+}
+
+/* ============================================================
+   Tree-shadow background — animated version of the leaf-shadow
+   PNG. Two depth layers (back mirrored/rotated/scaled for parallax)
+   are pushed by an SVG turbulence + displacement filter so the
+   leaves flutter; layered sine waves in JS sway the whole canopy.
+   Replaces the prior static .page-shadow <img>. Snippet imported
+   from Claude Design "shadow-background"; path adapted from
+   assets/leaf-shadow.png → assets/textures/shadow.png (same file).
+   ============================================================ */
+.tree-shadow {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* ---- tunables (override in dark theme below) -------------- */
+  --opacity-front: 0.14;
+  --opacity-back:  0.07;
+  --blur: 0px;
+  --tone: brightness(1);
+  --wash: transparent;
+  --blend: multiply;
+}
+.tree-shadow__layer {
+  position: absolute;
+  inset: -8%;
+  background-image: url("/assets/textures/shadow.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  mix-blend-mode: var(--blend);
+  will-change: transform;
+  transform-origin: 50% 0%;
+}
+.tree-shadow__layer--back {
+  opacity: var(--opacity-back);
+  transform: scaleX(-1) scale(1.22) rotate(3.5deg);
+  /* Leaf-flutter URL (#ts-wind-back) intentionally dropped —
+     feDisplacementMap on a 3.4MB image, twice, every frame was the
+     dominant GPU cost. Canopy sway via the transform above + the
+     rAF translate/rotate still reads as wind moving the tree. */
+  filter: blur(calc(var(--blur) + 2.4px)) var(--tone);
+}
+.tree-shadow__layer--front {
+  opacity: var(--opacity-front);
+  transform: scale(1.06) rotate(-1.2deg);
+  filter: blur(var(--blur)) var(--tone);
+}
+.tree-shadow__wash {
+  position: absolute;
+  inset: 0;
+  background: var(--wash);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  transition: background-color .5s ease;
+}
+.tree-shadow__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 120% at 50% 38%,
+              rgba(0,0,0,0) 55%, rgba(40,38,33,0.05) 100%);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.tree-shadow__svg { position: absolute; width: 0; height: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .tree-shadow__layer { transition: none !important; }
+}
+
+/* Full-bleed painting break — image fills the viewport width and is
+   ~85vh tall. The painting is also a hover target for vision summaries.
+   Sits between content sections as a cinematic moment instead of a
+   "look at this gallery" grid. */
+.painting-bleed {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  height: 80vh;
+  max-height: 880px;
+  position: relative;
+  overflow: hidden;
+  background: var(--white);
+}
+.painting-bleed a {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.painting-bleed img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 1200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.painting-bleed a:hover img { transform: scale(1.015); }
+.painting-bleed-caption {
+  position: absolute;
+  bottom: 24px;
+  left: 32px;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 500;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+  max-width: 380px;
+  line-height: 1.7;
+}
+.painting-bleed-caption em {
+  font-family: var(--serif);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 13px;
+  display: block;
+  margin-top: 4px;
+}
+/* Bleed height variants — mixing these breaks the perfect-slice rhythm */
+.painting-bleed.bleed-short { height: 52vh; max-height: 560px; }
+.painting-bleed.bleed-tall  { height: 96vh; max-height: 980px; }
+@media (max-width: 768px) {
+  .painting-bleed { height: 60vh; }
+  .painting-bleed.bleed-short { height: 44vh; }
+  .painting-bleed.bleed-tall  { height: 70vh; }
+  .painting-bleed-caption { left: 20px; bottom: 16px; font-size: 9px; }
+}
+
+/* ============================================================
+   Combined Pricing + FAQ row — two columns sharing one spread
+   ============================================================ */
+.pricing-faq { padding: 160px 0; }
+.pricing-faq-row {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: grid;
+  grid-template-columns: 1fr 1.05fr;
+  gap: 88px;
+  align-items: start;
+}
+.pricing-faq-row .pricing-col { position: relative; }
+.pricing-faq-row .pricing-label {
+  font-family: var(--display);
+  font-size: clamp(36px, 4vw, 52px);
+  line-height: 1.05;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0 0 48px;
+}
+.pricing-faq-row .pricing-label em { font-style: italic; color: var(--ink); }
+
+.pricing-faq-row .faq-col {
+  padding-left: 0;
+  border-left: 1px solid var(--rule);
+  padding-left: 56px;
+}
+.pricing-faq-row .faq-col-head {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: none;
+  color: var(--muted);
+  font-weight: 500;
+  margin: 0 0 36px;
+}
+.pricing-faq-row .faq-row {
+  grid-template-columns: 1fr;
+  gap: 10px;
+  padding: 24px 0;
+}
+.pricing-faq-row .faq-row-q {
+  font-size: clamp(20px, 2.2vw, 26px);
+}
+.pricing-faq-row .faq-row-a {
+  font-size: 16px;
+  line-height: 1.55;
+}
+@media (max-width: 900px) {
+  .pricing-faq-row { grid-template-columns: 1fr; gap: 64px; }
+  .pricing-faq-row .faq-col { padding-left: 0; border-left: none; border-top: 1px solid var(--rule); padding-top: 48px; }
+}
+
+/* ============================================================
+   Install spread with a painting half-bleed on the right
+   ============================================================ */
+.install-with-painting {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  align-items: stretch;
+  padding: 0;
+}
+.install-with-painting .install-content {
+  padding: 80px 80px 80px calc((100vw - 1240px) / 2 + 40px);
+  align-self: center;
+}
+@media (max-width: 1280px) {
+  .install-with-painting .install-content { padding: 80px 56px 80px 56px; }
+}
+.install-with-painting .install-painting {
+  position: relative;
+  min-height: 80vh;
+  overflow: hidden;
+}
+.install-with-painting .install-painting a { display: block; width: 100%; height: 100%; }
+.install-with-painting .install-painting img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.install-with-painting .install-painting .caption {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: none;
+  color: rgba(255,255,255,0.92);
+  font-weight: 500;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.5);
+}
+@media (max-width: 900px) {
+  .install-with-painting { grid-template-columns: 1fr; }
+  .install-with-painting .install-content { padding: 80px 24px; }
+  .install-with-painting .install-painting { min-height: 50vh; }
+}
+
+/* Editorial dateline that sits at the top of each spread — like the
+   ALL-CAPS section-marker line in a magazine. */
+.dateline {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: none;
+  color: var(--muted);
+  font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
+  margin: 0 40px 56px;
+}
+.dateline-meta {
+  font-family: var(--serif);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* Old centered head is kept for sections we haven't editorialized yet. */
+.section-head {
+  text-align: center;
+  margin-bottom: 80px;
+}
+.section-eyebrow { margin-bottom: 20px; }
+.section-title {
+  font-family: var(--display);
+  font-size: clamp(40px, 5vw, 64px);
+  line-height: 1.08;
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  margin: 0 auto;
+  max-width: 720px;
+}
+.section-title em {
+  font-style: italic;
+  color: var(--ink);
+}
+.section-sub {
+  font-family: var(--serif);
+  font-size: 20px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+  max-width: 580px;
+  margin: 24px auto 0;
+}
+
+/* ============================================================
+   Folio number bottom-corner of magazine spreads
+   ============================================================ */
+.folio {
+  position: absolute;
+  bottom: 24px;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  color: var(--muted);
+  font-weight: 500;
+}
+.folio.left  { left: 40px; }
+.folio.right { right: 40px; font-family: var(--serif); font-style: italic; letter-spacing: 0; font-size: 13px; }
+
+/* ============================================================
+   Live demo passage — annotated book page
+   Passage as a book column on the left; counter + hover hint
+   live as marginalia in the right margin like print footnotes.
+   ============================================================ */
+.demo { background: var(--white); padding-top: 200px; padding-bottom: 240px; }
+
+/* Demo as a magazine spread — passage column on the left, two
+   inset paintings staggered on the right at different sizes and
+   row positions. */
+.demo-mag .demo-passage   { grid-column: 1 / 7;  grid-row: 1 / 4; max-width: 480px; }
+.demo-mag .inset-renoir   { grid-column: 9 / 13; grid-row: 1;       margin-top: 40px; }
+.demo-mag .inset-picking  { grid-column: 7 / 12; grid-row: 3;       margin-top: 96px; }
+
+/* Install spread — text left, two staggered insets right */
+.install-mag .install-content { grid-column: 1 / 7;  grid-row: 1 / 3; }
+.install-mag .inset-monet     { grid-column: 8 / 12; grid-row: 1;       margin-top: 60px; }
+.install-mag .inset-willows   { grid-column: 9 / 13; grid-row: 2;       margin-top: 80px; }
+
+/* Pricing + FAQ spread — pricing left, FAQ right, with a small
+   Cézanne tucked in the cream space between */
+.pf-mag .pricing-col   { grid-column: 1 / 6;  grid-row: 1 / 3; }
+.pf-mag .faq-col       { grid-column: 8 / 13; grid-row: 1 / 3; }
+.pf-mag .inset-cezanne { grid-column: 6 / 9;  grid-row: 2;       margin-top: 200px; padding-left: 16px; padding-right: 16px; align-self: end; }
+
+/* Idea spread — pull quote across center, Willows is intentionally NOT
+   here; the portal-wrap cat halves are the visual moment. */
+.demo-passage {
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1.78;
+  color: var(--ink);
+  max-width: 580px;
+}
+.demo-passage h3 {
+  font-family: var(--display);
+  font-size: clamp(40px, 5vw, 64px);
+  font-weight: 800;
+  letter-spacing: -0.018em;
+  line-height: 1.05;
+  margin: 0 0 6px;
+}
+.demo-passage .byline {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+  margin: 0 0 36px;
+  font-weight: 500;
+}
+.demo-passage p { margin: 0 0 22px; }
+.demo-passage p:first-of-type::first-letter {
+  font-family: var(--display);
+  font-size: 4em;
+  float: left;
+  line-height: 0.85;
+  padding: 6px 12px 0 0;
+  color: var(--ink);
+  font-weight: 500;
+}
+.demo-passage a.wikilink {
+  color: var(--avocado);
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(90, 138, 31, 0.55);
+  background-image: linear-gradient(var(--avocado), var(--avocado));
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0 2px;
+  padding-bottom: 1px;
+  transition: background-size 380ms cubic-bezier(0.7, 0, 0.3, 1),
+              color           220ms ease,
+              border-color    220ms ease;
+  cursor: pointer;
+}
+.demo-passage a.wikilink:hover {
+  color: #3d5e16;
+  background-size: 100% 2px;
+  border-bottom-color: transparent;
+}
+
+/* Marginalia column on the right */
+.demo-margin {
+  position: sticky;
+  top: 120px;
+  padding-top: 80px;
+  border-left: 1px solid var(--rule);
+  padding-left: 28px;
+}
+.demo-margin-block + .demo-margin-block { margin-top: 36px; }
+.demo-margin-label {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: none;
+  color: var(--muted);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.demo-margin-note {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin: 0;
+}
+.demo-counter {
+  font-family: var(--display);
+  font-size: 28px;
+  line-height: 1;
+  color: var(--ink);
+}
+.demo-counter small {
+  display: block;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: none;
+  color: var(--muted);
+  margin-top: 6px;
+  font-weight: 500;
+}
+@media (max-width: 900px) {
+  .demo-spread { grid-template-columns: 1fr; gap: 48px; }
+  .demo-margin { position: static; padding: 24px 0 0; border-left: none; border-top: 1px solid var(--rule); }
+}
+
+/* ============================================================
+   The Idea — the portal-wrap moment. Cat halves anchored to the
+   left and right edges of the viewport: the right side of the cat
+   (handdrawn-09) emerges from the LEFT edge, the left side
+   (handdrawn-08) goes off into the RIGHT edge. The italic copy
+   sits between them, sized so the eye reads cat-edge → text →
+   cat-edge and understands "every link is a portal."
+   ============================================================ */
+.idea {
+  position: relative;
+  overflow: hidden;
+  padding: 140px 0 140px;
+  text-align: center;
+}
+.idea-portal-left {
+  position: absolute;
+  left: -40px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 360px;
+  width: auto;
+  pointer-events: none;
+}
+.idea-portal-right {
+  position: absolute;
+  right: -120px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 360px;
+  width: auto;
+  pointer-events: none;
+}
+.idea-text {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: clamp(28px, 3.4vw, 42px);
+  line-height: 1.35;
+  color: var(--ink);
+  max-width: 640px;
+  margin: 0 auto;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+  position: relative;
+  z-index: 1;
+}
+.idea-text em { font-style: normal; color: var(--ink); }
+.idea-eyebrow {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: none;
+  color: var(--muted);
+  font-weight: 500;
+  margin-bottom: 36px;
+}
+@media (max-width: 768px) {
+  .idea { padding: 120px 0 120px; }
+  .idea-portal-left  { height: 200px; left: -60px;  opacity: 0.5; }
+  .idea-portal-right { height: 200px; right: -120px; opacity: 0.5; }
+}
+
+/* ============================================================
+   Pricing — hand-set menu card pushed RIGHT, label/note on LEFT
+   ============================================================ */
+.pricing-spread {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 72px;
+  align-items: start;
+}
+.pricing-label {
+  font-family: var(--display);
+  font-size: clamp(40px, 4.5vw, 56px);
+  line-height: 1.05;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.pricing-label em { font-style: italic; color: var(--ink); }
+.pricing-aside {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+  margin-top: 28px;
+  max-width: 320px;
+}
+.pricing-dateline {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: none;
+  color: var(--muted);
+  font-weight: 500;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+@media (max-width: 900px) {
+  .pricing-spread { grid-template-columns: 1fr; gap: 40px; }
+}
+
+/* ============================================================
+   Install — pushed left, callout floats in the right margin
+   ============================================================ */
+.install {
+  text-align: left;
+  padding: 120px 0 140px;
+}
+.install-spread {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 72px;
+  align-items: center;
+}
+.install-headline {
+  font-family: var(--display);
+  font-size: clamp(40px, 5vw, 64px);
+  line-height: 1.08;
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  margin: 0 0 32px;
+  color: var(--ink);
+}
+.install-headline em { font-style: italic; color: var(--ink); }
+.install-aside {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+  max-width: 360px;
+}
+@media (max-width: 900px) {
+  .install-spread { grid-template-columns: 1fr; gap: 40px; }
+}
+
+/* ============================================================
+   FAQ — two-column running text (Q left in italic display,
+   A right in serif body) like an interview transcript
+   ============================================================ */
+.faq-spread {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+.faq-spread .dateline { margin-left: 0; margin-right: 0; }
+.faq-row {
+  display: grid;
+  grid-template-columns: 5fr 7fr;
+  gap: 56px;
+  padding: 40px 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: baseline;
+}
+.faq-row:first-of-type { border-top: 1px solid var(--rule); }
+.faq-row-q {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: clamp(22px, 2.4vw, 30px);
+  line-height: 1.2;
+  color: var(--ink);
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+}
+.faq-row-q .q-mark {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  background-image: url('/assets/handdrawn-21.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  margin-right: 8px;
+  vertical-align: -2px;
+}
+.faq-row-a {
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--ink-soft);
+  margin: 0;
+}
+.faq-row-a img.inline-icon { display: inline; }
+@media (max-width: 768px) {
+  .faq-row { grid-template-columns: 1fr; gap: 16px; padding: 28px 0; }
+}
+
+/* ============================================================
+   Footer — editorial colophon (3 columns: identity / nav / meta)
+   ============================================================ */
+.footer-colophon {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 80px 40px 56px;
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1fr;
+  gap: 48px;
+  align-items: end;
+  border-top: 1px solid var(--rule);
+}
+.footer-identity img {
+  height: 64px;
+  width: auto;
+  display: block;
+  margin-bottom: 16px;
+  opacity: 0.85;
+}
+.footer-identity-tag {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 280px;
+  line-height: 1.5;
+  margin: 0;
+}
+.footer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.footer-nav a {
+  font-family: var(--sans);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+  font-weight: 500;
+}
+.footer-nav a:hover { color: var(--ink); }
+.footer-meta-col {
+  text-align: right;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.footer-meta-col img { width: 14px; height: auto; display: inline; vertical-align: middle; }
+.footer-meta-col .stamp {
+  display: block;
+  width: 110px;
+  margin: 14px 0 0 auto;
+  opacity: 0.45;
+  transform: rotate(-3deg);
+}
+@media (max-width: 768px) {
+  .footer-colophon { grid-template-columns: 1fr; gap: 32px; text-align: left; padding: 56px 24px 40px; }
+  .footer-meta-col { text-align: left; }
+  .footer-meta-col .stamp { margin: 14px 0 0 0; }
+}
+
+/* ============================================================
+   Pricing — price-list rows (inner table; outer layout in .pricing-spread)
+   ============================================================ */
+.pricing-list {
+  margin: 0;
+}
+.price-row {
+  padding: 36px 0;
+  border-bottom: 1px solid var(--rule);
+  position: relative;
+}
+.price-row:first-child { border-top: 1px solid var(--rule); }
+.price-row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 32px;
+  margin-bottom: 18px;
+}
+.price-name {
+  font-family: var(--display);
+  font-size: 36px;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+.price-name small {
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: none;
+  color: var(--muted);
+  margin-left: 12px;
+  font-weight: 500;
+  vertical-align: 6px;
+}
+.price-amount {
+  font-family: var(--display);
+  font-size: 32px;
+  color: var(--ink);
+  font-feature-settings: "tnum" 1;
+  white-space: nowrap;
+}
+.price-amount small {
+  font-family: var(--sans);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: none;
+  color: var(--muted);
+  margin-left: 6px;
+  font-weight: 500;
+}
+.price-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 17px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+}
+.price-features li {
+  padding-left: 26px;
+  position: relative;
+  margin: 10px 0;
+}
+.price-features li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 11px;
+  width: 14px;
+  height: 14px;
+  background-image: url('/assets/handdrawn-20.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.9;
+}
+
+/* (Old centered Install / FAQ / Footer CSS removed — replaced by the
+   editorial spreads above: .install-spread, .faq-spread, .footer-colophon.) */
+
+/* Install button inner — paired with .install-stage wrapper that
+   supplies the hand-drawn rectangle background. */
+.install-btn {
+  display: inline-block;
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: 0;
+  padding: 14px 28px;
+  background: transparent;
+  color: #2c4810;
+  border: none;
+  text-decoration: none;
+  cursor: pointer;
+}
+.install-browsers {
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: none;
+  color: var(--muted);
+  font-weight: 500;
+  margin-top: 20px;
+}
+
+/* ============================================================
+   Hand-drawn dividers
+   ============================================================ */
+.divider {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  width: 200px;
+  padding: 64px 0;
+  opacity: 0.4;
+}
+.divider img { width: 100%; height: auto; }
+
+/* ============================================================
+   Limit-reached banner (sleeping cat)
+   ============================================================ */
+.limit-banner {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--white);
+  border-top: 1px solid var(--ink);
+  padding: 24px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  z-index: 100;
+  transform: translateY(100%);
+  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 -8px 32px rgba(28, 28, 25, 0.06);
+}
+.limit-banner.visible { transform: translateY(0); }
+.limit-cat { width: 80px; height: auto; flex-shrink: 0; }
+.limit-text {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1.4;
+  color: var(--ink);
+  max-width: 380px;
+}
+.limit-cta {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 14px 28px;
+  background: var(--ink);
+  color: var(--white);
+  border: none;
+  flex-shrink: 0;
+}
+.limit-cta:hover { background: var(--avocado); }
+@media (max-width: 640px) {
+  .limit-banner { flex-direction: column; text-align: center; padding: 20px; gap: 16px; }
+  .limit-text   { font-size: 18px; }
+}
+
+/* ============================================================
+   Scroll-revealed elements — direction-aware entrance animations.
+   Uses the `translate` and `rotate` longhand properties (not
+   `transform`) so the reveal composes cleanly with each element's
+   resting `transform: rotate(...)` (e.g. .bleed-l, .tilt-snug).
+   At rest after `.in`, the element falls back to its natural
+   transform — preserving the scrapbook tilt.
+   ============================================================ */
+.reveal {
+  opacity: 0;
+  translate: 0 28px;
+  transition: opacity   1100ms cubic-bezier(0.22, 1, 0.36, 1),
+              translate 1100ms cubic-bezier(0.22, 1, 0.36, 1),
+              rotate    1100ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, translate, rotate;
+}
+.reveal.in { opacity: 1; translate: 0 0; rotate: 0; }
+
+/* Direction variants. Translate only — no rotation. Rotation
+   during reveal was causing text blocks to appear tilted (hard
+   to read) when the IntersectionObserver hadn't fired yet. */
+.reveal-from-l { translate: -48px 24px; }
+.reveal-from-r { translate:  48px 24px; }
+.reveal-from-t { translate: 0 -44px; }
+.reveal-from-b { translate: 0  44px; }
+
+/* Stagger helpers: applied to siblings so they reveal sequentially. */
+.reveal-d1 { transition-delay: 100ms; }
+.reveal-d2 { transition-delay: 220ms; }
+.reveal-d3 { transition-delay: 340ms; }
+
+/* Respect reduced-motion preference — show without animation. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; translate: 0; rotate: 0; transition: none; }
+}
+
+/* ============================================================
+   Painting gallery — editorial magazine spread with NGA pieces.
+   Asymmetric placement, generous cream, museum-catalog labels.
+   Each painting is also a live hover target for vision summaries.
+   ============================================================ */
+.gallery {
+  background: var(--white);
+  padding: 140px 0 160px;
+  position: relative;
+  overflow: hidden;
+}
+.gallery-canvas {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 56px;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: auto;
+  gap: 32px;
+  align-items: start;
+}
+/* Figures */
+.gallery-fig {
+  position: relative;
+}
+.gallery-fig a {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  cursor: pointer;
+}
+.gallery-fig img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1),
+              filter    400ms ease;
+  filter: saturate(0.94);
+}
+.gallery-fig a:hover img {
+  transform: scale(1.03);
+  filter: saturate(1.08);
+}
+.gallery-cap {
+  margin-top: 16px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+.gallery-meta {
+  display: block;
+  font-family: var(--sans);
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: none;
+  color: var(--muted);
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+/* Asymmetric placement: A small left, B big right.
+   Below: C centered-ish, D off to the right, E low and small. */
+.gallery-fig.fig-a { grid-column: 1 / 5;  grid-row: 1; margin-top: 0;     aspect-ratio: 4 / 5; }
+.gallery-fig.fig-b { grid-column: 6 / 13; grid-row: 1; margin-top: -32px; aspect-ratio: 5 / 4; }
+.gallery-fig.fig-c { grid-column: 3 / 9;  grid-row: 2; margin-top: 200px; aspect-ratio: 4 / 3; }
+.gallery-fig.fig-d { grid-column: 9 / 13; grid-row: 2; margin-top: 280px; aspect-ratio: 4 / 5; }
+.gallery-fig.fig-e { grid-column: 2 / 6;  grid-row: 3; margin-top: 120px; aspect-ratio: 5 / 4; }
+
+/* Marginalia label far right of fig-b (museum-coordinate style). */
+.gallery-tag {
+  position: absolute;
+  top: -28px;
+  right: 0;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: none;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Floating marginalia cat in the negative space */
+.gallery-marginalia {
+  position: absolute;
+  right: 6%;
+  top: 56%;
+  width: 110px;
+  height: auto;
+  opacity: 0.65;
+  transform: rotate(4deg);
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .gallery { padding: 96px 0; }
+  .gallery-canvas { padding: 0 24px; gap: 20px; }
+  .gallery-fig.fig-a { grid-column: 1 / 7;  margin-top: 0;   aspect-ratio: 4/5; }
+  .gallery-fig.fig-b { grid-column: 6 / 13; margin-top: 64px; aspect-ratio: 5/4; }
+  .gallery-fig.fig-c { grid-column: 1 / 9;  margin-top: 96px; aspect-ratio: 4/3; }
+  .gallery-fig.fig-d { grid-column: 8 / 13; margin-top: 128px; aspect-ratio: 4/5; }
+  .gallery-fig.fig-e { grid-column: 2 / 8;  margin-top: 64px;  aspect-ratio: 5/4; }
+  .gallery-marginalia { display: none; }
+}
+@media (max-width: 560px) {
+  .gallery-canvas { display: block; }
+  .gallery-fig { margin: 0 auto 56px !important; max-width: 360px; aspect-ratio: auto !important; }
+  .gallery-fig img { aspect-ratio: 4 / 5; }
+}
+
+/* ============================================================
+   Hand-drawn underlines (added under specific headlines).
+   Pseudo-element overlays the SVG as a background image so the
+   underline scales with the text width.
+   ============================================================ */
+/* Hand-drawn scribble underline. The scribble is a real <img>
+   inside the wrapper (not a background-image) so it can render at
+   full SVG resolution without being clipped to the wrapper's box.
+   Width is sized as a percentage of the wrapped word's width so
+   the squiggle visually spans the word.
+   The wrapper carries an 8-direction white-colored text-shadow
+   that "knocks out" the squiggle wherever it overlaps the letter
+   glyphs (especially descenders like 'p', 'y', 'g'), keeping the
+   text readable. The img sits at z-index -1 inside the wrapper's
+   own stacking context so the knockout lands on top of it. */
+.underline-wrap {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+  z-index: 0;
+  text-shadow:
+    -2px  0   var(--white),
+     2px  0   var(--white),
+     0   -2px var(--white),
+     0    2px var(--white),
+    -2px -2px var(--white),
+     2px -2px var(--white),
+    -2px  2px var(--white),
+     2px  2px var(--white);
+}
+.underline-mark {
+  position: absolute;
+  left: 50%;
+  bottom: -0.30em;
+  width: 118%;
+  height: auto;
+  translate: -50% 0;
+  pointer-events: none;
+  user-select: none;
+  z-index: -1;
+}
+.underline-mark.tall   { width: 130%; bottom: -0.36em; }
+.underline-mark.short  { width: 108%; bottom: -0.12em; }
+
+/* ============================================================
+   Ornament dividers + small horizontal accent rule
+   ============================================================ */
+.ornament {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 0;
+  opacity: 0.4;
+}
+.ornament img { width: 28px; height: auto; }
+.ornament-asterisk img { width: 28px; }
+.ornament-dash img { width: 64px; opacity: 0.7; }
+
+/* ============================================================
+   Inline mini icons (lock / star next to text)
+   ============================================================ */
+.inline-icon {
+  display: inline-block;
+  height: 0.95em;
+  width: auto;
+  vertical-align: -0.12em;
+  margin-right: 8px;
+}
+
+/* ============================================================
+   Cat transition between sections — top half peeks down from above,
+   bottom half emerges from below at the next section
+   ============================================================ */
+.cat-transition {
+  position: relative;
+  max-width: 1080px;
+  margin: 0 auto;
+  height: 0;
+  pointer-events: none;
+}
+.cat-transition .cat-top {
+  position: absolute;
+  top: -120px;
+  right: 12%;
+  width: 130px;
+  height: auto;
+  opacity: 0.85;
+}
+.cat-transition .cat-bottom {
+  position: absolute;
+  top: 0;
+  right: 12%;
+  width: 130px;
+  height: auto;
+  opacity: 0.85;
+}
+@media (max-width: 768px) {
+  .cat-transition .cat-top    { right: 6%; width: 90px; top: -84px; }
+  .cat-transition .cat-bottom { right: 6%; width: 90px; }
+}
+
+/* ============================================================
+   Pricing — dollar sign + Pro tier accent + star feature
+   ============================================================ */
+.dollar-sign {
+  display: inline-block;
+  height: 0.85em;
+  width: auto;
+  vertical-align: -0.04em;
+  margin-right: 2px;
+}
+/* (was a handdrawn vertical bar accent on the pro row — removed
+   because it was rendering as a stray tiny rectangle in the new
+   layout.) */
+
+/* ============================================================
+   Install — hand-drawn rectangle button background + arrow
+   ============================================================ */
+.install-stage {
+  position: relative;
+  display: inline-block;
+  padding: 28px 40px;
+}
+.install-stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('/assets/handdrawn-28.svg');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  z-index: 0;
+  pointer-events: none;
+  transition: rotate 700ms cubic-bezier(0.34, 1.4, 0.64, 1),
+              scale  700ms cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.install-stage:hover::before { rotate: -4deg; scale: 1.04; }
+.install-stage:active::before { rotate: -2deg; scale: 0.98; }
+.install-stage .install-btn {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  color: var(--ink);
+  padding: 6px 0;
+  transition: color 220ms ease, translate 180ms ease;
+}
+.install-stage .install-btn:hover {
+  background: transparent;
+  color: var(--ink);
+  transform: none;
+}
+.install-stage .install-btn:active { translate: 0 2px; }
+.install-arrow {
+  position: absolute;
+  width: 80px;
+  height: auto;
+  bottom: -8px;
+  left: -100px;
+  opacity: 0.7;
+  pointer-events: none;
+  transform: scaleX(-1);
+  transition: translate 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.install-stage:hover .install-arrow { translate: -10px 0; }
+@media (max-width: 768px) {
+  .install-arrow { display: none; }
+}
+
+/* ============================================================
+   Exclamation callout (used next to "free cap" mention etc.)
+   ============================================================ */
+.callout {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 14px 18px;
+  background: var(--avocado-tint);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--ink-soft);
+  max-width: 520px;
+  line-height: 1.5;
+}
+.callout img {
+  width: 14px;
+  height: auto;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Footer — PORTALTEXT block wordmark + prtltxt oval stamp +
+   house icon
+   ============================================================ */
+.footer-wordmark {
+  width: 360px;
+  max-width: 80%;
+  height: auto;
+  margin: 0 auto 28px;
+  opacity: 0.7;
+  display: block;
+}
+.footer-stamp {
+  display: inline-block;
+  width: 110px;
+  height: auto;
+  opacity: 0.5;
+  margin-top: 28px;
+  transform: rotate(-3deg);
+}
+.footer-home {
+  display: inline-block;
+  width: 16px;
+  height: auto;
+  vertical-align: -3px;
+  margin-right: 6px;
+  opacity: 0.7;
+}
+
+/* ============================================================
+   Vertical narrative — section primitives.
+   Each major section is a different SHAPE so the page never
+   reads as ABABAB. Shared cream background lets sections blend;
+   bridging ornaments (cat halves, drifting doodles, tape that
+   spans seams) disguise the boundaries.
+   ============================================================ */
+
+/* Base section spacing — generous Apple-tier breath by default. */
+.spread {
+  position: relative;
+  padding: 180px 0;
+}
+.spread.spread-tight { padding: 120px 0; }
+.spread.spread-loose { padding: 240px 0; }
+
+/* Narrow centered editorial column — single focal point per
+   section. Used for about/thesis and the install CTA. */
+.spread-narrow {
+  max-width: 720px;
+  margin: 0 auto;
+  padding-left: 40px;
+  padding-right: 40px;
+  text-align: left;
+}
+
+/* Asymmetric 40/60 — title block left, content right. Used for
+   the demo passage so the live demo gets the bigger gesture. */
+.spread-asymmetric {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: 56px;
+  padding-right: 56px;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 1.7fr;
+  gap: 96px;
+  align-items: start;
+}
+
+/* Section with a painting pinned to a margin as a scrapbook
+   artifact. Content + artifact sit side by side as grid items;
+   default places artifact LEFT, .artifact-right swaps the layout.
+   The artifact is intentionally narrower than the content column
+   so it reads as marginalia, not as a second equal column. */
+.spread-with-artifact {
+  position: relative;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding-left: 56px;
+  padding-right: 56px;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  grid-template-areas: "artifact content";
+  gap: 96px;
+  align-items: start;
+}
+.spread-with-artifact.artifact-right {
+  grid-template-columns: 1fr 320px;
+  grid-template-areas: "content artifact";
+}
+.spread-with-artifact > .margin-artifact { grid-area: artifact; }
+.spread-with-artifact > :not(.margin-artifact) { grid-area: content; }
+
+.margin-artifact {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  z-index: 2;
+  margin-top: 24px;
+}
+.margin-artifact a {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+.margin-artifact img.painting {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: saturate(0.95);
+}
+
+/* Full-bleed painting plate — cinematic moment. Spans the
+   viewport width; tape pins it to the page at the top; museum
+   wall-label sits low-left over the image. */
+.plate {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-top: 0;
+  margin-bottom: 0;
+  height: 85vh;
+  max-height: 920px;
+  overflow: visible;
+  padding: 0;
+}
+.plate a {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+}
+.plate img.painting {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(0.93);
+}
+.plate-caption {
+  position: absolute;
+  bottom: 36px;
+  left: 56px;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.94);
+  font-weight: 500;
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.55);
+  z-index: 4;
+  pointer-events: none;
+}
+.plate-caption em {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 18px;
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 400;
+}
+/* Plate tape pieces — larger than inset-fig tape because the
+   plate itself is huge. Pinned at the top corners, overhanging.
+   No hover movement — tape stays put. */
+.plate > .tape {
+  position: absolute;
+  width: 200px;
+  height: auto;
+  z-index: 5;
+  pointer-events: none;
+  user-select: none;
+}
+.plate > .tape.tape-corner-tl { top: -34px; left: 5%;  rotate: -10deg; }
+.plate > .tape.tape-corner-tr { top: -34px; right: 5%; rotate:  10deg; }
+
+/* Cat halves overlaid on the Renoir plate — one peeks over the
+   upper-right, the other emerges from the lower-left. The plate
+   itself is the signature cat moment of the page. */
+.plate-cat {
+  position: absolute;
+  width: 200px;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+  z-index: 6;
+}
+.plate-cat-top    { top: -306px; left: 1158px; right: auto;  width: 206px; }
+.plate-cat-bottom { top:  699px; left:  104px; bottom: auto; width: 207px; }
+@media (max-width: 900px) {
+  .plate-cat { width: 130px; }
+  .plate-cat-top    { top: -190px;    right: 4%; left: auto; }
+  .plate-cat-bottom { bottom: -130px; left:  4%; top:  auto; }
+}
+
+/* Thesis mark — the "Every link is a portal" line. Sits at the
+   bottom of the about section as a quiet signature, not as its
+   own block. */
+.thesis-mark {
+  margin-top: 88px;
+  text-align: center;
+}
+.thesis-mark .portal-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  justify-content: center;
+}
+.thesis-mark .portal-pair img {
+  height: 110px;
+  width: auto;
+  flex-shrink: 0;
+  transition: translate 800ms cubic-bezier(0.22, 1, 0.36, 1),
+              rotate    800ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: translate, rotate;
+}
+.thesis-mark:hover .portal-pair img:first-of-type { translate: -14px 0; rotate: -10deg; }
+.thesis-mark:hover .portal-pair img:last-of-type  { translate:  14px 0; rotate:  10deg; }
+.thesis-mark .thesis-text {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: clamp(26px, 3.2vw, 38px);
+  line-height: 1.3;
+  color: var(--ink);
+  margin: 0;
+  font-weight: 400;
+}
+.thesis-mark .thesis-text em { font-style: normal; color: var(--ink); }
+
+/* Demo lede — left side of the asymmetric demo spread. */
+.demo-lede h3 {
+  font-family: var(--display);
+  font-size: clamp(40px, 4.4vw, 64px);
+  line-height: 0.98;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 18px 0 24px;
+  color: var(--ink);
+}
+.demo-lede h3 em { font-style: italic; color: var(--ink); }
+.demo-lede .demo-lede-sub {
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin: 0;
+  max-width: 320px;
+}
+.demo-lede .demo-arrow {
+  width: 86px;
+  height: auto;
+  margin-top: 48px;
+  opacity: 0.55;
+  transform: scaleX(-1) rotate(28deg);
+}
+
+/* Marginalia — small handdrawn ornaments floating absolutely in
+   the cream gutters around content. They live in margins without
+   consuming flow. Use multiple per section so the page feels
+   marked-up by hand. */
+.marginalia {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.85;
+  transition: rotate 600ms cubic-bezier(0.34, 1.4, 0.64, 1),
+              scale  600ms cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.marginalia img { display: block; width: 100%; height: auto; }
+.marginalia.size-xs { width: 40px;  }
+.marginalia.size-sm { width: 64px;  }
+.marginalia.size-md { width: 110px; }
+.marginalia.size-lg { width: 180px; }
+.marginalia:hover { rotate: -6deg; scale: 1.08; }
+
+/* Page-level cat arcs — book-end the body content. Pinned
+   absolutely to their parent section so they don't consume any
+   column real estate. */
+.cat-arc {
+  position: absolute;
+  width: 200px;
+  pointer-events: none;
+  z-index: 3;
+}
+.cat-arc img { display: block; width: 100%; height: auto; }
+.cat-arc-top    { top: -90px;    right: 6%;  }
+.cat-arc-bottom { bottom: -80px; left:  6%;  }
+
+/* About section section-eyebrow needs a touch above the headline. */
+.about-section .about-text {
+  font-family: var(--serif);
+  font-size: 18px;
+  line-height: 1.65;
+  color: var(--ink-soft);
+  margin: 0;
+}
+.about-section .about-text em { font-style: italic; color: var(--ink); }
+.about-section h2 {
+  font-family: var(--display);
+  font-size: clamp(42px, 4.8vw, 64px);
+  line-height: 1.0;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  margin: 18px 0 28px;
+  color: var(--ink);
+}
+.about-section h2 em        { font-style: italic; color: var(--ink); }
+.about-section h2 .ink-em   { font-style: normal; color: var(--ink); font-weight: 400; }
+
+/* Install section — give the CTA major real estate. */
+.install-section { text-align: center; }
+.install-section h2 {
+  font-family: var(--display);
+  font-size: clamp(48px, 5.4vw, 72px);
+  line-height: 1.0;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  margin: 18px 0 56px;
+  color: var(--ink);
+}
+.install-section h2 em      { font-style: italic; color: var(--ink); }
+.install-section h2 .ink-em { font-style: normal; color: var(--ink); font-weight: 400; }
+.install-section .install-stage { margin: 0 auto; }
+.install-sparkle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 32px;
+  opacity: 0.7;
+}
+.install-sparkle img:nth-child(1) { height: 32px; width: auto; rotate: -12deg; }
+.install-sparkle img:nth-child(2) { height: 56px; width: auto; }
+.install-sparkle img:nth-child(3) { height: 32px; width: auto; rotate: 14deg; }
+.install-section .install-browsers {
+  margin-top: 24px;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: none;
+  color: var(--muted);
+  font-weight: 500;
+}
+.install-section .callout {
+  margin: 44px auto 0;
+  display: inline-flex;
+}
+
+/* FAQ section adjustments inside the artifact spread. */
+.faq-section h2 {
+  font-family: var(--display);
+  font-size: clamp(36px, 4vw, 52px);
+  line-height: 1.0;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  margin: 18px 0 48px;
+  color: var(--ink);
+}
+.faq-section h2 em { font-style: italic; color: var(--ink); }
+
+/* Pricing section adjustments inside the artifact spread. */
+.pricing-section { text-align: left; }
+.pricing-section h2 {
+  font-family: var(--display);
+  font-size: clamp(36px, 4vw, 56px);
+  line-height: 1.0;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  margin: 18px 0 48px;
+  color: var(--ink);
+}
+.pricing-section h2 em      { font-style: italic; color: var(--ink); }
+.pricing-section h2 .ink-em { font-style: normal; color: var(--ink); font-weight: 400; }
+
+.demo-lede h3 .ink-em { font-style: normal; color: var(--ink); font-weight: 400; }
+
+@media (max-width: 900px) {
+  .spread { padding: 110px 0; }
+  .spread-asymmetric {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+  .spread-with-artifact {
+    max-width: none;
+    padding: 0 28px;
+  }
+  .margin-artifact {
+    position: relative;
+    top: auto; left: auto; right: auto;
+    width: 100%;
+    max-width: 360px;
+    margin: 56px auto 0;
+  }
+  .plate { height: 60vh; }
+  .plate-caption { left: 24px; bottom: 20px; }
+  .cat-arc { width: 130px; }
+  .cat-arc-top    { top: -60px;  right: 4%; }
+  .cat-arc-bottom { bottom: -50px; left: 4%; }
+}
+
+/* Suppress the "↗" external-link glyph that portaltext.js injects
+   on .extlink elements — we don't want it on the painting images
+   (which are wrapped in .extlink for the vision-hover affordance). */
+a.extlink.painting-hover::after { content: none !important; }
+
+/* ============================================================
+   Drag-edit mode — toggled with Cmd/Ctrl+E. Outlines every
+   ornament so it can be dragged into place; a floating panel
+   shows the current element's offsets to transcribe back to
+   source. Hidden until enabled, so it never affects production.
+   ============================================================ */
+.drag-edit {
+  outline: 1.5px dashed rgba(198, 255, 74, 0.85);
+  outline-offset: 4px;
+  cursor: move !important;
+  pointer-events: auto !important;
+  transition: outline-color 120ms ease;
+}
+.drag-edit:hover  { outline-color: #c6ff4a; outline-style: solid; }
+.drag-edit.active { outline: 2px solid #ff4a4a; outline-offset: 4px; }
+/* During edit mode, force-reveal so we can drag pre-viewport ornaments. */
+.edit-mode-on .reveal {
+  opacity: 1 !important;
+  translate: 0 0 !important;
+}
+/* Underline marks normally sit behind the text (z-index: -1) so the
+   text-shadow knockout can overlay them. In edit mode raise them so
+   clicks reach them. */
+.edit-mode-on .underline-mark { z-index: 200 !important; }
+#edit-panel {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  translate: -50% 0;
+  background: #1c1c19;
+  color: #ffffff;
+  font: 12px/1.4 ui-monospace, 'SF Mono', Menlo, monospace;
+  padding: 12px 16px;
+  border-radius: 6px;
+  z-index: 9999;
+  max-width: 480px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+  user-select: text;
+}
+#edit-panel strong { color: #c6ff4a; letter-spacing: 0.1em; }
+#edit-panel #edit-info { margin-top: 8px; opacity: 0.95; }
+#edit-panel .edit-key { color: #c6ff4a; }
+#edit-panel button {
+  font: inherit;
+  background: #c6ff4a;
+  color: #1c1c19;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 3px;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+/* Resize + rotate handles. Rendered as a fixed-position overlay
+   on top of the selected element so they work regardless of the
+   element's overflow / clipping. */
+#edit-handles {
+  position: fixed;
+  top: 0; left: 0;
+  width: 0; height: 0;
+  z-index: 10000;
+  pointer-events: none;
+}
+#edit-handles .eh {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #c6ff4a;
+  border: 1.5px solid #1c1c19;
+  border-radius: 2px;
+  pointer-events: auto;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+#edit-handles .nw { cursor: nwse-resize; }
+#edit-handles .ne { cursor: nesw-resize; }
+#edit-handles .sw { cursor: nesw-resize; }
+#edit-handles .se { cursor: nwse-resize; }
+#edit-handles .rot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ff4a4a;
+  cursor: grab;
+}
+#edit-handles .rot::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 1.5px;
+  height: 18px;
+  background: #ff4a4a;
+  transform: translateX(-50%);
+}
+#edit-handles .rot:active { cursor: grabbing; }
+
+/* ============================================================
+   Signup form (in the install section) — minimal underline-style
+   fields that read like notebook lines so they fit the editorial
+   aesthetic. Avocado accent on focus, hand-drawn submit stage
+   reused from .install-stage. Success state replaces the form
+   with a confirmation message + install link.
+   ============================================================ */
+.signup-form {
+  max-width: 420px;
+  margin: 32px auto 0;
+  text-align: left;
+}
+.signup-field {
+  display: block;
+  margin-bottom: 22px;
+}
+.signup-field-label {
+  display: block;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: none;
+  color: var(--muted);
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.signup-input {
+  display: block;
+  width: 100%;
+  padding: 8px 0;
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--ink);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--rule-strong);
+  outline: none;
+  transition: border-color 200ms ease;
+  border-radius: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.signup-input:focus { border-bottom-color: var(--avocado); }
+.signup-input::placeholder { color: var(--muted); opacity: 0.5; }
+.signup-error {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14px;
+  color: #b22;
+  margin: 8px 0 16px;
+}
+.signup-helper {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--muted);
+  margin: 14px 0 0;
+  text-align: center;
+}
+.signup-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+/* Success state — fades in after the form posts successfully. */
+.signup-success {
+  max-width: 480px;
+  margin: 32px auto 0;
+  text-align: center;
+  animation: signup-success-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.signup-success-title {
+  font-family: var(--display);
+  font-size: clamp(28px, 3vw, 36px);
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  margin: 0 0 14px;
+  color: var(--ink);
+}
+.signup-success-body {
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin: 0 0 32px;
+}
+.signup-success-body strong {
+  font-family: var(--display);
+  font-weight: 700;
+  color: var(--ink);
+}
+@keyframes signup-success-in {
+  0%   { opacity: 0; translate: 0 16px; }
+  100% { opacity: 1; translate: 0 0; }
+}
+/* Submit button reuses .install-stage / .install-btn — when the
+   submit is a <button> rather than an <a>, normalize the appearance
+   so it blends with the existing CTA styling. */
+.install-stage button.install-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  background: transparent;
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: 0;
+  padding: 14px 28px;
+  cursor: pointer;
+}
+.install-stage button.install-btn[disabled] {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+/* ============================================================
+   Demo carousel — sticky horizontal scroll-hijack
+   Four scenes (Borges / Bible / paintings / HN) slide
+   horizontally as the user scrolls vertically through the wrapper.
+   Left-side lede stays pinned the entire time.
+   ============================================================ */
+.demo-scroll-wrapper {
+  position: relative;
+  /* Tall enough to give every scene a generous reading "dwell"
+     phase. JS maps scroll progress through 5 dwells + 4
+     transitions, weighted 2:1 dwell:transition. */
+  height: 660vh;
+  padding: 0;
+}
+.demo-scroll-sticky {
+  position: sticky;
+  /* Offset by nav height so content's optical center matches the
+     viewer's perceived center (true geometric center sits behind
+     the fixed nav otherwise, making the content read as "too high"). */
+  top: 90px;
+  height: calc(100vh - 90px);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+.demo-scroll-grid {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 56px;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 1.7fr;
+  gap: 96px;
+  align-items: center;
+  box-sizing: border-box;
+}
+.demo-lede-fixed {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.demo-track-viewport {
+  position: relative;
+  width: 100%;
+  height: 80vh;
+  max-height: 820px;
+  overflow: hidden;
+}
+.demo-track {
+  display: flex;
+  height: 100%;
+  /* 5 scenes × 100% viewport-width each = 500% */
+  width: 500%;
+  will-change: transform;
+}
+.demo-scene {
+  /* Each scene occupies 1/5 of the track = 100% of the viewport.
+     Inner left/right padding creates a visible whitespace seam
+     between scenes during transition. overflow:hidden suppresses
+     scrollbars — if content slightly exceeds, it clips quietly
+     rather than offering a fiddly inner scroll. */
+  flex: 0 0 20%;
+  width: 20%;
+  height: 100%;
+  /* top padding gives the header breathing room inside the acetate panel;
+     no bottom padding since long scenes are meant to clip at the bottom. */
+  padding: 30px 36px 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.demo-scene .demo-passage {
+  max-width: none;
+  height: 100%;
+  /* Anchor scene content to the TOP of its panel. When a scene is taller
+     than the panel (small viewports / high zoom), the header + opening
+     lines stay visible and only the bottom clips — far better than
+     centering, which would cut off both ends including the title. */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+/* Paintings scene exception: it's shorter than the text-heavy scenes
+   (just a heading + 2×2 grid, no overflow risk), so top-anchoring leaves
+   a big empty void below. Center it so it sits in the panel like the
+   other scenes do when their text naturally fills the height. */
+.demo-scene .demo-passage:has(.demo-paintings) {
+  justify-content: center;
+}
+
+/* Kill the demo-passage drop-cap everywhere in the carousel.
+   Drop-caps don't suit narrow scene columns, and the existing
+   :first-of-type rule would otherwise plant a huge "J orge" on
+   the byline. Specificity bumped above the .block-demo rule
+   that defines the drop-cap. */
+.block-demo .demo-scene .demo-passage p::first-letter,
+.block-demo .demo-scene .demo-passage p:first-of-type::first-letter {
+  font-family: inherit;
+  font-size: inherit;
+  float: none;
+  padding: 0;
+  color: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+/* Bible scene — verse numbers as tiny avocado superscripts;
+   suppress the demo-passage drop-cap (which would catch the "1"
+   of the leading "10"). */
+.demo-scene-bible .verse {
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.85;
+  color: var(--ink);
+  margin: 0;
+}
+.demo-scene-bible p:first-of-type::first-letter {
+  font-size: inherit;
+  float: none;
+  padding: 0;
+  font-weight: inherit;
+  font-family: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+.demo-scene-bible .verse-num {
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--avocado);
+  vertical-align: super;
+  letter-spacing: 0.02em;
+  margin: 0 4px 0 2px;
+}
+
+/* Paintings scene — 2×2 grid of clickable, hoverable tiles. */
+.demo-paintings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding-top: 36px;
+}
+.demo-paintings .painting-tile {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: var(--paper);
+  cursor: pointer;
+}
+.demo-paintings .painting-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(0.92);
+  transition: scale 500ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.demo-paintings .painting-tile:hover img { scale: 1.04; }
+
+/* HN scene — minimal serif list, no orange. */
+.demo-hn .hn-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.demo-hn .hn-row {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.demo-hn .hn-row:last-child { border-bottom: none; }
+.demo-hn .hn-rank {
+  font-family: var(--display);
+  font-size: 26px;
+  color: var(--muted);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  padding-top: 2px;
+}
+.demo-hn .hn-title {
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.35;
+  color: var(--avocado);
+  display: block;
+  margin: 0 0 6px;
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(90, 138, 31, 0.55);
+  padding-bottom: 2px;
+}
+.demo-hn .hn-title:hover {
+  color: #3d5e16;
+  border-bottom-color: transparent;
+}
+.demo-hn .hn-meta {
+  font-family: var(--sans);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.demo-hn .hn-meta a {
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(0,0,0,0.18);
+}
+.demo-hn .hn-meta a:hover {
+  color: var(--avocado);
+  border-bottom-color: var(--avocado);
+}
+.demo-hn .hn-loading,
+.demo-hn .hn-error {
+  font-family: var(--serif);
+  color: var(--muted);
+  font-style: italic;
+  font-size: 14px;
+  list-style: none;
+  padding: 14px 0;
+}
+
+/* References scene — academic-paper-style citation list with
+   hanging indent, dotted DOI/PMC/PubMed labels. */
+.demo-scene-refs h3 {
+  font-family: var(--display);
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 400;
+  letter-spacing: -0.016em;
+  margin: 0 0 6px;
+}
+.demo-scene-refs .refs-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  counter-reset: refnum;
+}
+.demo-scene-refs .ref-item {
+  font-family: var(--serif);
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink);
+  padding: 14px 0 14px 28px;
+  text-indent: -28px;
+  border-bottom: 1px solid var(--rule);
+}
+.demo-scene-refs .ref-item:last-child { border-bottom: none; }
+.demo-scene-refs .ref-item em { font-style: italic; }
+.demo-scene-refs .ref-cite {
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--avocado);
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(90, 138, 31, 0.55);
+  padding-bottom: 1px;
+  text-transform: uppercase;
+  margin-left: 2px;
+}
+.demo-scene-refs .ref-cite:hover {
+  color: #3d5e16;
+  border-bottom-color: transparent;
+}
+.demo-scene-refs .ref-sep {
+  color: var(--muted);
+  margin: 0 2px;
+  font-family: var(--sans);
+  font-size: 11px;
+}
+
+/* Progress dots — sit under the lede arrow, mark current scene. */
+.demo-progress {
+  display: flex;
+  gap: 10px;
+  margin-top: 32px;
+}
+.demo-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.12);
+  transition: background 220ms ease, scale 220ms ease;
+}
+.demo-dot.active {
+  background: var(--avocado);
+  scale: 1.3;
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 768px) {
+  .wrap, .wrap-tight, .wrap-wide { padding: 0 24px; }
+  .nav { padding: 16px 24px; }
+  .nav.scrolled { padding: 12px 24px; }
+  .hero { padding: 160px 0 100px; }
+  .hero-wordmark img { height: 70px; }
+  section { padding: 80px 0; }
+  .demo-passage-frame { padding: 0 24px; }
+  .demo-counter { position: static; writing-mode: horizontal-tb; margin: 0 0 16px; text-align: center; }
+  .price-row-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .install { padding: 96px 0; }
+  /* Demo carousel — fall back to stacked scenes on mobile.
+     Scroll-hijack on touch is unreliable; vertical stacking
+     gives readers all four scenes without the sticky mechanic. */
+  .demo-scroll-wrapper { height: auto; }
+  .demo-scroll-sticky  { position: static; height: auto; overflow: visible; display: block; }
+  .demo-scroll-grid    { display: block; padding: 0 24px; }
+  .demo-track-viewport { height: auto; max-height: none; }
+  .demo-track          { display: block; width: 100%; transform: none !important; }
+  .demo-scene          { flex: none; width: 100%; height: auto; padding: 40px 0; border-bottom: 1px solid var(--rule); overflow: visible; }
+  .demo-scene:last-child { border-bottom: none; }
+  .demo-scene .demo-passage { height: auto; }
+  .demo-progress       { display: none; }
+  .demo-paintings      { grid-template-columns: 1fr; }
+}
+</style>
+
+<style id="nintendofication">
+/* ============================================================
+   nintendofication layer — electric chartreuse pops, blackletter
+   accents on charged words, and frosted tracing-paper "portal"
+   panes. Loaded last so it overrides the base styles above
+   without disturbing them. Keeps the hero, demo, leaves, logos.
+   ============================================================ */
+:root {
+  --lime:      #A4E22B;   /* electric chartreuse — the life-force */
+  --lime-2:    #B6EC54;
+  --lime-deep: #6FA01B;   /* legible green for links/text on white */
+  --lime-ink:  #2C4810;   /* dark green text on lime surfaces */
+  --bl: "Pirata One", "LINE Seed JP", serif;
+  /* nudge the muted avocado to a more present, alive green */
+  --avocado: #5f9213;
+  --portaltext-link: #5f9213;
+}
+/* Dark mode: dim the electric chartreuse so green accents read as a calm leaf
+   green, and lift the muted grey which is too dim to read on the navy paper. */
+:root[data-theme="dark"] {
+  --lime:   oklch(0.68 0.155 128);
+  --lime-2: oklch(0.74 0.15 128);
+  --muted:  #98a1ae;
+}
+
+/* ---- Blackletter accent (sparingly, one charged word per view) ---- */
+.bl {
+  font-family: var(--bl);
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.012em;
+}
+
+/* HERO headline — 'portal' set in blackletter, chartreuse-deep. */
+.hero-headline em { font-style: normal; color: var(--ink); }
+.hero-headline .bl { color: var(--lime-deep); font-size: 1.08em; line-height: 0.9; display: inline-block; }
+
+/* Wikilinks & accents — lift to the present green. */
+.block-demo .demo-passage a.wikilink,
+.demo-passage a.wikilink { color: var(--lime-deep); }
+.demo-progress .demo-dot.active { background: var(--lime-deep) !important; }
+.limit-cta:hover { background: var(--lime) !important; color: var(--lime-ink) !important; }
+
+/* ============================================================
+   Frosted tracing-paper pane — the 'portal' surface.
+   On lime it frosts like tracing paper; on white it carries a
+   faint green tint + hairline so it still reads as a pane.
+   ============================================================ */
+.pane {
+  position: relative;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.34);
+  box-shadow: 0 34px 80px -34px rgba(40,60,10,0.32), inset 0 1px 0 rgba(255,255,255,0.7);
+}
+.pane.on-white {
+  background: rgba(164,226,43,0.10);
+  border: 1px solid rgba(28,28,25,0.14);
+  box-shadow: 0 30px 70px -34px rgba(40,60,10,0.26), inset 0 1px 0 rgba(255,255,255,0.7);
+}
+
+/* A frosted pane carrying a sample portaltext summary — echoes the
+   product, and gives the FAQ/pricing margins a 'portal' artifact in
+   place of the retired museum paintings. */
+.summary-pane { padding: 26px 26px 28px; }
+.summary-pane .sp-label {
+  font-family: var(--sans); font-weight: 700;
+  font-size: 10px; letter-spacing: 0; text-transform: uppercase;
+  color: var(--lime-deep); margin-bottom: 12px;
+}
+.summary-pane .sp-title {
+  font-family: var(--display); font-weight: 800;
+  font-size: 20px; letter-spacing: -0.02em; line-height: 1.1; margin: 0 0 10px; color: var(--ink);
+}
+.summary-pane .sp-text { font-family: var(--serif); font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
+.summary-pane .sp-text b { color: var(--lime-deep); font-weight: 700; }
+/* a faint second pane peeking behind, for the layered tracing-paper feel */
+.summary-pane::after {
+  content:""; position:absolute; right:-16px; top:-16px; width:100%; height:100%;
+  border-radius:18px; background: rgba(164,226,43,0.12); border:1px solid rgba(28,28,25,0.10);
+  z-index:-1; rotate: 3deg;
+}
+
+/* ============================================================
+   PORTAL BREAK — full-bleed chartreuse cinematic moment.
+   Layered frosted panes + cat-halves flank the tagline.
+   Replaces the standalone museum-painting plate after the demo.
+   ============================================================ */
+.portal-break {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  background: var(--lime);
+  overflow: hidden;
+  padding: 168px 40px;
+  display: flex; align-items: center; justify-content: center;
+  isolation: isolate;
+}
+.portal-break::before {
+  content:""; position:absolute; inset:-12%; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(42% 50% at 24% 26%, rgba(255,255,255,0.30), transparent 62%),
+    radial-gradient(56% 62% at 82% 82%, rgba(40,74,10,0.30), transparent 60%);
+  filter: blur(10px);
+}
+.portal-break .pb-panes { position:absolute; inset:0; z-index:1; pointer-events:none; }
+.portal-break .pane {
+  position:absolute;
+  background: rgba(255,255,255,0.20);
+  border-color: rgba(255,255,255,0.55);
+  box-shadow: 0 30px 60px -32px rgba(40,60,10,0.4), inset 0 1px 0 rgba(255,255,255,0.5);
+  animation: pb-drift 11s ease-in-out infinite;
+}
+.portal-break .pb-p1 { width: 270px; height: 190px; left: 5%;  top: 16%; rotate:-7deg; }
+.portal-break .pb-p2 { width: 210px; height: 290px; right: 6%; top: 20%; rotate: 6deg; animation-delay:-3.5s; }
+.portal-break .pb-p3 { width: 170px; height: 140px; left: 15%; bottom: 12%; rotate: 4deg; animation-delay:-7s; }
+@keyframes pb-drift { 0%,100%{ translate:0 0 } 50%{ translate:0 -12px } }
+
+.portal-break .pb-inner { position: relative; z-index: 2; text-align: center; max-width: 1000px; }
+.portal-break .pb-kicker {
+  font-family: var(--sans); font-weight: 700;
+  font-size: 12px; letter-spacing: 0; text-transform: uppercase;
+  color: rgba(255,255,255,0.85); margin-bottom: 28px;
+}
+.portal-break .pb-head {
+  font-family: var(--display); font-weight: 800;
+  font-size: clamp(52px, 8vw, 108px); line-height: 0.98; letter-spacing: -0.035em;
+  color: #fff; margin: 0; text-shadow: 0 2px 30px rgba(40,60,10,0.12);
+}
+.portal-break .pb-head .bl { font-size: 1.12em; line-height: 0.85; display: inline-block; }
+.portal-break .pb-sub {
+  font-family: var(--serif); font-size: 19px; line-height: 1.5; font-weight: 500;
+  color: rgba(255,255,255,0.94); margin: 32px auto 0; max-width: 520px;
+}
+.portal-break .pb-cat { position:absolute; z-index:2; height: 230px; width:auto; pointer-events:none; }
+.portal-break .pb-cat-l { left: -26px; top: 50%; transform: translateY(-50%) rotate(-4deg); }
+.portal-break .pb-cat-r { right: -26px; top: 50%; transform: translateY(-50%) rotate(4deg); }
+@media (max-width: 900px) {
+  .portal-break { padding: 110px 24px; }
+  .portal-break .pane, .portal-break .pb-cat { display:none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-break .pane { animation: none; }
+}
+
+/* A subtle frosted pane drifting in the hero, behind the cat — a
+   quiet first whisper of the 'portal' motif. */
+.hero-pane {
+  position: absolute; z-index: 0; pointer-events: none;
+  width: 240px; height: 300px; left: 30%; top: 18%;
+  rotate: -6deg; opacity: 0.9;
+  animation: pb-drift 12s ease-in-out infinite;
+}
+@media (max-width: 900px) { .hero-pane { display: none; } }
+</style>
+
+<style id="overhaul">
+/* ============================================================
+   OVERHAUL — restructured body (keeps hero + demo, reskins demo).
+   Frosted 'portal windows' as the core motif, mono micro-labels
+   for digital cleanliness, chartreuse anchors, blackletter beats.
+   ============================================================ */
+:root { --mono: "IBM Plex Mono", ui-monospace, monospace; }
+
+.ov { position: relative; max-width: 1200px; margin: 0 auto; padding: 0 40px; }
+.ov-wide { max-width: 1320px; }
+.sec { position: relative; padding: 150px 0; }
+@media (max-width: 760px){ .sec { padding: 96px 0; } }
+.sec-marker {
+  font-family: var(--sans); font-size: 13px; font-weight: 700; letter-spacing: 0.01em;
+  color: var(--lime-deep); margin-bottom: 20px;
+}
+.sec-marker .num { display: none; }
+.sec-h {
+  font-family: var(--display); font-weight: 800;
+  font-size: clamp(36px, 4.4vw, 60px); line-height: 1.02; letter-spacing: -0.03em;
+  margin: 0; color: var(--ink); max-width: 820px; text-wrap: balance;
+}
+.sec-h .bl { color: var(--lime-deep); font-size: 1.08em; }
+
+/* ---- frosted portal window ---- */
+.window {
+  position: relative; border-radius: 18px;
+  background: rgba(255,255,255,0.62);
+  border: 1px solid rgba(28,28,25,0.12);
+  box-shadow: 0 44px 90px -44px rgba(40,60,10,0.4), inset 0 1px 0 rgba(255,255,255,0.7);
+  overflow: hidden;
+}
+.window-bar { display: flex; align-items: center; gap: 9px; padding: 13px 16px; border-bottom: 1px solid rgba(28,28,25,0.08); }
+.window-bar .wd { width: 9px; height: 9px; border-radius: 50%; background: rgba(28,28,25,0.16); }
+.window-bar .wd.lime { background: var(--lime); }
+.window-bar .wt { margin-left: 6px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; color: var(--muted); }
+.window-body { padding: 24px 26px; }
+
+/* chartreuse pill */
+.pill-lime {
+  display: inline-flex; align-items: center; gap: 9px;
+  font-family: var(--sans); font-weight: 700; font-size: 16px;
+  background: var(--lime); color: var(--lime-ink);
+  padding: 15px 28px; border-radius: 999px; border: none; cursor: pointer; text-decoration: none;
+  box-shadow: 0 14px 30px -12px rgba(111,160,27,0.6);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.pill-lime:hover { transform: translateY(-2px); box-shadow: 0 20px 40px -14px rgba(111,160,27,0.7); color: var(--lime-ink); }
+
+/* ---- §A opening thesis ---- */
+.thesis-sec { padding: 150px 0 160px; }
+.thesis-grid { display: grid; grid-template-columns: 1.02fr 1fr; gap: 64px; align-items: center; }
+.thesis-head { font-family: var(--display); font-weight: 800; font-size: clamp(44px, 5.2vw, 72px); line-height: 1.0; letter-spacing: -0.035em; margin: 0 0 26px; color: var(--ink); }
+.thesis-head .bl { color: var(--lime-deep); font-size: 1.05em; }
+.thesis-body { font-family: var(--serif); font-size: 19px; line-height: 1.6; color: var(--ink-soft); max-width: 460px; margin: 0 0 32px; }
+.thesis-cta { display: inline-flex; align-items: center; gap: 16px; }
+.thesis-cta .note { font-family: var(--sans); font-size: 13px; color: var(--ink-soft); }
+/* thesis: a live demonstration, not decoration — a reading surface with
+   a hovered link and the summary 'portal' opening over it. The pane IS
+   the product. */
+.thesis-demo { position: relative; min-height: 430px; display: flex; align-items: center; }
+.td-page {
+  position: relative; width: 100%; max-width: 440px; margin-left: auto;
+  background: rgba(255,255,255,0.66);
+  border: 1px solid rgba(28,28,25,0.10); border-radius: 18px;
+  box-shadow: 0 44px 90px -44px rgba(40,60,10,0.34), inset 0 1px 0 rgba(255,255,255,0.7);
+  padding: 36px 38px;
+  font-family: var(--serif); font-size: 17px; line-height: 1.9; color: var(--ink);
+}
+.td-page .td-link {
+  color: var(--lime-deep); white-space: nowrap; cursor: help; padding: 0 1px;
+  background: linear-gradient(rgba(164,226,43,0.32), rgba(164,226,43,0.32)) 0 1.05em/100% 38% no-repeat;
+}
+.td-summary {
+  position: absolute; right: -30px; bottom: -36px; width: 286px;
+  background: #fff; border: 1px solid rgba(28,28,25,0.10); border-radius: 14px;
+  box-shadow: 0 40px 80px -32px rgba(40,60,10,0.5);
+  padding: 18px 20px 20px;
+}
+.td-summary .s-tab { display:inline-flex; align-items:center; font-family: var(--sans); font-weight: 700; font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--lime-ink); background: var(--lime); padding: 4px 11px; border-radius: 999px; margin-bottom: 12px; }
+.td-summary .s-title { font-family: var(--display); font-weight: 800; font-size: 17px; letter-spacing:-0.02em; margin: 0 0 7px; color: var(--ink); }
+.td-summary .s-text { font-family: var(--serif); font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); margin: 0; }
+.td-summary .s-text b { color: var(--lime-deep); font-weight: 700; }
+@media (max-width: 900px){
+  .thesis-grid { grid-template-columns: 1fr; gap: 40px; }
+}
+
+/* ---- §B demo reskin: frame the live demo as a portal window ---- */
+.demo-track-viewport {
+  border-radius: 18px;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(28,28,25,0.1);
+  box-shadow: 0 44px 90px -44px rgba(40,60,10,0.32);
+}
+.demo-progress .demo-dot { background: rgba(28,28,25,0.18); }
+.demo-progress .demo-dot.active { background: var(--lime-deep) !important; }
+.demo-lede .sec-marker { margin-bottom: 22px; }
+
+/* ---- §D value cards ---- */
+.value-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 54px; }
+.value-card { padding: 32px 30px 34px; border: 1px solid var(--rule); border-top: 3px solid var(--lime); border-radius: 14px; background: rgba(255,255,255,0.4); }
+.value-card .vc-label { font-family: var(--sans); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--lime-deep); margin-bottom: 14px; }
+.value-card .vc-title { font-family: var(--display); font-weight: 800; font-size: 23px; letter-spacing: -0.02em; margin: 0 0 12px; color: var(--ink); }
+.value-card .vc-text { font-family: var(--serif); font-size: 16px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
+@media (max-width: 900px){ .value-grid { grid-template-columns: 1fr; } }
+
+/* ---- §E pricing panes ---- */
+/* §E support — one humble note instead of tier cards. There's no free-vs-
+   paid comparison because there's nothing to compare: free is the product;
+   supporting is a thank-you. The gif sits beside the copy like a taped-in
+   polaroid; on narrow screens it stacks underneath. */
+.support-row { display: grid; grid-template-columns: 7fr 5fr; gap: 48px; margin-top: 54px; align-items: center; }
+.support-note { padding: 38px 36px 34px; border: 1px solid var(--rule); border-radius: 16px; background: rgba(255,255,255,0.4); }
+.support-note p { font-family: var(--serif); font-size: 17px; line-height: 1.68; color: var(--ink-soft); margin: 0 0 18px; }
+.support-note p:last-child { margin-bottom: 0; }
+.support-note a { color: var(--lime-deep); border-bottom: 1px solid rgba(111,160,27,0.45); transition: border-color 160ms ease; }
+.support-note a:hover { border-bottom-color: var(--lime-deep); }
+.support-note .support-soon { font-family: var(--sans); font-size: 13px; letter-spacing: 0.01em; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 16px; margin-top: 22px; }
+.support-gif { margin: 0; text-align: center; }
+.support-gif img { width: 100%; max-width: 420px; border-radius: 12px; rotate: 2.5deg; box-shadow: 0 18px 44px rgba(40,52,24,0.16); }
+@media (max-width: 760px){ .support-row { grid-template-columns: 1fr; gap: 36px; } }
+
+/* ---- §F faq ---- */
+.faq2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 56px; margin-top: 44px; }
+.faq2 .qa { padding: 28px 0; border-top: 1px solid var(--rule); }
+.faq2 .q { font-family: var(--display); font-weight: 800; font-size: 19px; letter-spacing:-0.01em; margin: 0 0 10px; color: var(--ink); }
+.faq2 .a { font-family: var(--serif); font-size: 16px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
+.faq2 .a a { color: var(--lime-deep); border-bottom: 1px solid rgba(111,160,27,0.45); transition: border-color 160ms ease, color 160ms ease; }
+.faq2 .a a:hover { color: var(--lime-deep); border-bottom-color: var(--lime-deep); }
+@media (max-width: 760px){ .faq2 { grid-template-columns: 1fr; } }
+
+/* ---- §E/§F scroll-paused reveal: pricing + FAQ pin for ~1 viewport
+   while their items stagger in driven by scroll progress, then hold
+   (a deliberate "rest") before the page scrolls on. Matches the
+   hero/thesis/demo pin vocabulary. Desktop only — on small screens
+   the items are simply shown (no pin, no hidden state). ---- */
+.pause-pin { position: relative; }
+@media (min-width: 761px) {
+  .pause-pin { height: 270vh; }
+  .pause-pin > .sec,
+  .pause-pin > .install-finale {
+    position: sticky;
+    display: flex;
+    align-items: center;
+  }
+  /* full-bleed lime finale fills the whole viewport (bleeds behind the nav) */
+  .pause-pin > .install-finale { top: 0; min-height: 100vh; }
+  /* white content sections (pricing, FAQ): offset by the fixed-nav height (90px)
+     so their optical centre sits in the visible area BELOW the nav. Without this
+     the content is centred across the full 100vh and the top — the section label
+     and heading — tucks up under the nav and reads as too-high / clipped. */
+  .pause-pin > .sec { top: 90px; min-height: calc(100vh - 90px); padding: 0; }
+  .pause-pin > .sec > .ov { width: 100%; }
+  .pause-pin > .install-finale > .if-inner { width: 100%; }
+  .pause-item {
+    opacity: 0;
+    translate: 0 42px;
+    transition: opacity   1000ms cubic-bezier(0.22, 1, 0.36, 1),
+                translate 1000ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, translate;
+  }
+  .pause-item.in { opacity: 1; translate: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pause-item { opacity: 1 !important; translate: 0 !important; transition: none !important; }
+}
+.edit-mode-on .pause-item { opacity: 1 !important; translate: 0 !important; }
+
+
+/* ---- §G install finale: full-bleed lime + frosted form window ---- */
+.install-finale { position: relative; width: 100vw; margin-left: calc(50% - 50vw); background: var(--lime); overflow: hidden; padding: 150px 40px; isolation: isolate; }
+.install-finale::before { content:""; position:absolute; inset:-12%; z-index:0;
+  background: radial-gradient(40% 48% at 22% 26%, rgba(255,255,255,0.28), transparent 60%),
+              radial-gradient(54% 60% at 82% 82%, rgba(40,74,10,0.28), transparent 60%); filter: blur(10px); }
+.install-finale .if-inner { position: relative; z-index: 2; max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 1fr 430px; gap: 60px; align-items: center; }
+.install-finale .if-kicker { font-family: var(--sans); font-weight:700; font-size:13px; letter-spacing:0.04em; color: rgba(255,255,255,0.9); margin-bottom: 22px; }
+.install-finale .if-head { font-family: var(--display); font-weight: 800; font-size: clamp(44px, 6vw, 78px); line-height: 0.98; letter-spacing:-0.035em; color: #fff; margin: 0 0 20px; }
+.install-finale .if-head .bl { font-size: 1.1em; }
+.install-finale .if-sub { font-family: var(--serif); font-size: 18px; line-height: 1.5; color: rgba(255,255,255,0.94); margin: 0; max-width: 380px; }
+@media (max-width: 900px){ .install-finale { padding: 110px 24px; } .install-finale .if-inner { grid-template-columns: 1fr; gap: 40px; } }
+
+/* ============================================================
+   Hand-drawn stickers — Posca-marker doodles slapped into the
+   blank gutters of each section and tucked behind the content
+   panels. Purely ornamental: pointer-events off, and they sit
+   BEHIND the content (z-index 0) so opaque cards crop them the
+   way a real sticker peeks out from under a sheet of paper.
+   Placement / size / tilt / opacity are set inline per sticker.
+   Hidden on small screens, where there's no gutter to fill.
+   ============================================================ */
+.sticker {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+  display: block;
+  height: auto;
+  opacity: var(--sticker-op, 0.5);
+  will-change: transform;
+}
+/* recolor a green doodle to soft white for the lime install panel */
+.sticker--white { filter: brightness(0) invert(1); }
+/* a soft fade-in so they feel hand-placed, not snapped to grid */
+@media (prefers-reduced-motion: no-preference) {
+  .sticker { animation: sticker-settle 1000ms cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+}
+@keyframes sticker-settle {
+  from { opacity: 0; }
+}
+@media (max-width: 760px) { .sticker { display: none; } }
+/* In drag-edit mode (⌘E) the stickers must be clickable so they can be
+   dragged/resized/rotated; normally they're inert decoration. */
+.edit-mode-on .sticker, .sticker.drag-edit { pointer-events: auto; }
+
+/* form window on green (keeps signup form IDs/classes; restyles) */
+.form-window { background: rgba(255,255,255,0.95); border-radius: 20px; padding: 32px 32px 34px; box-shadow: 0 50px 100px -40px rgba(40,60,10,0.6); }
+.form-window .signup-field { display:block; margin-bottom: 16px; }
+.form-window .signup-field-label { font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing:0.01em; color: var(--ink-soft); display:block; margin-bottom: 7px; }
+.form-window .signup-input { width:100%; font-family: var(--sans); font-size: 16px; padding: 13px 15px; border-radius: 11px; border: 1px solid rgba(28,28,25,0.18); background: #fff; color: var(--ink); }
+.form-window .signup-input:focus { outline: none; border-color: var(--lime-deep); box-shadow: 0 0 0 3px rgba(164,226,43,0.32); }
+.form-window .signup-actions { margin-top: 20px; }
+.form-window .install-stage { display:block; background: none !important; padding: 0 !important; }
+/* Direct-install window (account-less): one big CTA, centered. */
+.form-window .install-direct { text-align: center; padding: 18px 4px 6px; }
+.form-window .install-direct .install-btn { display: inline-block; }
+.form-window .install-direct .signup-helper { margin-top: 18px; }
+.form-window .install-stage .install-arrow { display:none; }
+.form-window .install-btn { display:block; width:100%; box-sizing:border-box; text-align:center; background: var(--lime) !important; color: var(--lime-ink) !important; border:none !important; border-radius: 999px; padding: 16px; font-family: var(--sans); font-weight:700; font-size:16px; box-shadow: 0 14px 30px -12px rgba(111,160,27,0.6); transition: transform 160ms ease; }
+.form-window .install-btn:hover { transform: translateY(-2px); }
+.form-window .signup-helper { font-family: var(--sans); font-size:12px; color: var(--muted); margin: 12px 0 0; text-align:center; }
+.form-window .signup-success-title { font-family: var(--display); font-weight:800; font-size: 23px; margin:0 0 10px; color: var(--ink); }
+.form-window .signup-success-body { font-family: var(--serif); font-size: 15px; color: var(--ink-soft); line-height:1.5; margin: 0 0 18px; }
+.form-window .signup-error { font-family: var(--sans); font-size: 13px; color: #b3261e; margin-top: 4px; }
+
+/* responsive: collapse two-column layouts earlier so nothing pokes
+   past the edge on tablet widths */
+@media (max-width: 1080px){
+  .install-finale .if-inner { grid-template-columns: 1fr; gap: 40px; }
+  .install-finale .form-window { max-width: 460px; }
+}
+
+/* ---- thesis reveal-card: a single frosted card slides in from the right
+   as you scroll past, glides over the "open web" phrase in the headline,
+   and reveals a short definition of what that phrase means. Desktop only;
+   drops to clean copy on tablet/mobile so it never covers text. ---- */
+/* ---- thesis reveal-card: as you scroll into this section it PINS in place
+   (sticky) while a single acetate-film card slides in from the right and
+   comes to rest in the empty right-hand column, beside the copy — never
+   over it, so the headline stays legible. Scroll progress through the pin
+   drives the animation; once it finishes, the pin releases and the page
+   scrolls on. Desktop only; drops to clean copy on tablet/mobile. ---- */
+.thesis-pin { position: relative; }
+.thesis-sec .ov { position: relative; }
+.thesis-copy { position: relative; z-index: 1; }
+.thesis-head .bl { position: relative; }
+.thesis-right { display: none; }
+.thesis-rotary { display: none; }
+@media (min-width: 901px){
+  /* tall scroll track; the sticky section holds for ~1 viewport of
+     scroll, which is the window the card animation plays across. */
+  .thesis-pin { height: 210vh; }
+  .thesis-sec { position: sticky; top: 0; height: 100vh; padding: 0; }
+  .thesis-sec .ov { min-height: 0; height: 100%; display: flex; align-items: center; }
+  .thesis-sec .ov > .thesis-grid { width: 100%; }
+  .thesis-right { display: block; }
+  /* full-viewport clip layer so the card can start fully off the right edge */
+  .thesis-rotary { display: block; position: absolute; top: 0; bottom: 0; left: calc(50% - 50vw); width: 100vw; z-index: 3; pointer-events: none; overflow: hidden; }
+
+  /* Acetate film — a clear, lime-tinted glossy sheet that rests beside the
+     copy. A soft diagonal sheen and a thin white film edge sell the
+     material. Matches the "Acetate film" study in glass-lab.html. */
+  .ow-card {
+    position: absolute; top: 0; left: 0;
+    width: 400px;
+    padding: 28px 32px 32px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(176,236,84,0.46), rgba(120,195,45,0.26));
+    box-shadow:
+      0 34px 66px -26px rgba(20,30,5,0.50),
+      0 2px 10px rgba(20,30,5,0.14);
+    will-change: transform, opacity;
+    opacity: 0;
+  }
+  /* glossy diagonal sheen across the top-left + thin white film edge */
+  .ow-card::before {
+    content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background: linear-gradient(122deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 42%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,0.6),
+      inset 0 1px 1px rgba(255,255,255,0.7);
+  }
+  .ow-kicker {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0;
+    text-transform: uppercase; color: var(--lime-ink); font-weight: 500;
+    margin: 0 0 8px; position: relative;
+  }
+  .ow-term {
+    font-family: var(--display); font-weight: 800; font-size: 30px;
+    letter-spacing: -0.03em; line-height: 1.04; color: var(--ink); margin: 0 0 12px;
+    position: relative;
+  }
+  .ow-def {
+    font-family: var(--serif); font-size: 16px; line-height: 1.55;
+    color: #27330f; margin: 0; position: relative;
+    opacity: 0; translate: 0 8px;
+    transition: opacity 520ms ease, translate 520ms cubic-bezier(0.22,1,0.36,1);
+  }
+  .ow-def.in { opacity: 1; translate: 0 0; }
+  .ow-def b { color: var(--lime-ink); font-weight: 700; }
+
+  :root[data-theme="dark"] .ow-card {
+    background: linear-gradient(135deg, rgba(164,226,43,0.30), rgba(90,150,30,0.20));
+  }
+  :root[data-theme="dark"] .ow-term { color: #f4ede0; }
+  :root[data-theme="dark"] .ow-def { color: #e7f3cf; }
+  :root[data-theme="dark"] .ow-kicker,
+  :root[data-theme="dark"] .ow-def b { color: #cde89a; }
+}
+
+/* ---- demo carousel — the color-pop moment. The whole demo stage is
+   full-bleed chartreuse (the punchy beat that used to live in the separate
+   "every link is a portal" break, now given to the page's most important
+   section). The scene track floats on the green as a frosted white reading
+   pane — the "reading layer" surfacing content over the portal-green — and
+   the lede type goes white to sit on the lime. The horizontal-scroll
+   mechanic and every scene's behaviour are untouched. ---- */
+.demo-scroll-wrapper {
+  background: var(--lime);
+  /* guarantee full-bleed even if an ancestor is ever width-constrained */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+}
+
+/* dappled leaf-shadow on the green — the same canopy that falls across the
+   rest of the page, but painted ONTO the lime stage (the opaque green would
+   otherwise hide the fixed shadow behind it). The leaf texture is multiplied
+   into the lime via background-blend so it darkens the green like real shade;
+   it sways on a slow loop and flutters through the shared wind filter. Sits
+   behind all demo content. */
+.demo-leaves {
+  position: absolute;
+  inset: -8%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    url("/assets/textures/shadow.png") center / cover no-repeat,
+    var(--lime);
+  background-blend-mode: multiply;
+  opacity: 0.15;
+  will-change: transform;
+  animation: demo-leaf-sway 17s ease-in-out infinite;
+}
+@keyframes demo-leaf-sway {
+  0%,100% { transform: scale(1.05) translate3d(0, 0, 0) rotate(-0.6deg); }
+  50%     { transform: scale(1.07) translate3d(16px, 5px, 0) rotate(0.8deg); }
+}
+/* demo content rides above the leaf layer */
+.demo-scroll-grid { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .demo-leaves { animation: none; }
+}
+/* same canopy on the install-finale green, above its glow but behind the
+   copy + form window */
+.install-finale .demo-leaves { z-index: 1; }
+
+/* lede type, now sitting on the lime — white with a soft shadow for lift */
+.demo-lede .sec-marker { color: rgba(255,255,255,0.92); }
+.demo-lede h3 { color: #fff; text-shadow: 0 1px 2px rgba(40,60,10,0.22); }
+.demo-lede h3 .bl { color: #fff; font-size: 1.08em; }
+.demo-lede .demo-lede-sub { color: rgba(255,255,255,0.96); text-shadow: 0 1px 2px rgba(40,60,10,0.18); }
+.demo-lede .demo-arrow { filter: brightness(0) invert(1); opacity: 0.9; }
+.demo-progress .demo-dot { background: rgba(255,255,255,0.42); }
+.demo-progress .demo-dot.active { background: #fff !important; }
+
+/* the scene track as acetate film. The film is GREEN, so on the green stage
+   it must DEEPEN the green (more saturated, darker) — not lighten it. So here
+   the tint is a saturated green laid translucently over the lime stage (no
+   white base), and the scene type flips to light, the way it would on any
+   deep-green glass. (On paper — the §A card, the Plus tier — the same idea
+   greens a white background instead.) */
+.demo-track-viewport {
+  border-radius: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(50,92,12,0.60), rgba(38,72,9,0.68));
+  border: 1px solid rgba(255,255,255,0.42);
+  box-shadow:
+    0 50px 100px -42px rgba(20,34,4,0.7),
+    0 4px 14px rgba(20,34,4,0.22),
+    inset 0 1px 1px rgba(255,255,255,0.5);
+}
+/* the sliding track sits above the pane bg, below the sheen */
+.demo-track { position: relative; z-index: 1; }
+/* a faint diagonal glint in the top-right corner (whitespace in every
+   scene) so the pane keeps a glassy edge without washing out any text */
+.demo-track-viewport::after {
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(235deg, rgba(255,255,255,0.26), rgba(255,255,255,0) 22%);
+}
+
+/* Dark mode: the big full-bleed green stages drop to a deep night-green so they
+   don't glare; the frosted pane + light type still hold against it. */
+:root[data-theme="dark"] .demo-scroll-wrapper,
+:root[data-theme="dark"] .install-finale { background: oklch(0.5 0.125 129); }
+/* soften the ambient white glow and the bright diagonal "acetate" sheens so they
+   stop flaring against the dark surface */
+:root[data-theme="dark"] .install-finale::before { opacity: 0.5; }
+:root[data-theme="dark"] .ow-card::before,
+:root[data-theme="dark"] .demo-track-viewport::after,
+:root[data-theme="dark"] .price-card.plus::after,
+:root[data-theme="dark"] .install-finale .form-window::after { opacity: 0.3; }
+
+/* ---- same acetate film on the Plus pricing tier and the signup form,
+   so the "reading layer" material recurs at the two decision points. The
+   Plus card sits on paper (matches the §A card exactly — translucent lime,
+   no base); the signup form sits on the green stage (needs a light base for
+   legibility, like the demo panel). Both get the diagonal sheen + white edge,
+   layered below their content so text/inputs stay crisp and clickable. ---- */
+.price-card.plus {
+  position: relative;
+  background: linear-gradient(135deg, rgba(176,236,84,0.46), rgba(120,195,45,0.26));
+  border: 1px solid rgba(255,255,255,0.7);
+  box-shadow:
+    0 34px 70px -34px rgba(30,46,8,0.40),
+    inset 0 1px 1px rgba(255,255,255,0.85);
+}
+.install-finale .form-window {
+  position: relative;
+  background: linear-gradient(135deg, rgba(50,92,12,0.62), rgba(38,72,9,0.70));
+  border: 1px solid rgba(255,255,255,0.42);
+}
+.price-card.plus::after,
+.install-finale .form-window::after {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(235deg, rgba(255,255,255,0.5), rgba(255,255,255,0) 26%);
+}
+/* the form is on the green (deeper panel) — soften its glint like the demo */
+.install-finale .form-window::after {
+  background: linear-gradient(235deg, rgba(255,255,255,0.26), rgba(255,255,255,0) 22%);
+}
+/* lift the real content above the sheen so it stays crisp + interactive */
+.price-card.plus > *,
+.install-finale .form-window > * { position: relative; z-index: 1; }
+
+/* light type for the two deep-green acetate panels (demo + signup) */
+.demo-track-viewport .demo-passage,
+.demo-track-viewport .demo-passage .verse,
+.demo-track-viewport .demo-hn .hn-title,
+.demo-track-viewport .demo-scene-refs .ref-item { color: #eef4e2; }
+.demo-track-viewport .demo-passage h3 { color: #ffffff; }
+.demo-track-viewport .demo-passage .byline,
+.demo-track-viewport .demo-hn .hn-meta,
+.demo-track-viewport .demo-scene-refs .ref-sep { color: rgba(238,244,226,0.6); }
+.demo-track-viewport .demo-hn .hn-rank { color: rgba(238,244,226,0.85); }
+/* accents → light lime so they read on the deep green (were lime-deep) */
+.demo-track-viewport .demo-passage a.wikilink,
+.demo-track-viewport .demo-scene-bible .verse-num,
+.demo-track-viewport .demo-scene-refs .ref-cite,
+.demo-track-viewport .demo-hn .hn-meta a {
+  color: #cdee84;
+}
+.demo-track-viewport .demo-passage a.wikilink {
+  border-bottom-color: rgba(205,238,132,0.55);
+  background-image: linear-gradient(#cdee84, #cdee84);
+}
+.demo-track-viewport .demo-passage a.wikilink:hover { color: #e7f8bd; }
+.demo-track-viewport .demo-hn .hn-meta a:hover,
+.demo-track-viewport .demo-scene-refs .ref-cite:hover { color: #e7f8bd; }
+/* hairline separators between HN/reference rows, lightened for the green */
+.demo-track-viewport .demo-hn .hn-row,
+.demo-track-viewport .demo-scene-refs .ref-item { border-bottom-color: rgba(255,255,255,0.16); }
+
+/* signup form: labels + helper light; inputs keep their white field, the
+   lime button still pops against the deeper panel */
+.install-finale .form-window .signup-field-label { color: rgba(255,255,255,0.92); }
+.install-finale .form-window .signup-helper { color: rgba(255,255,255,0.7); }
+.install-finale .form-window .signup-success-title { color: #ffffff; }
+.install-finale .form-window .signup-success-body { color: rgba(255,255,255,0.85); }
+
+
+
+/* nav CTA — clean lime pill (drop the hand-drawn rect bg) + hide the
+   purely-decorative hero pane */
+.nav-cta { background-image: none !important; background: var(--lime); color: var(--lime-ink); border-radius: 999px; padding: 11px 22px; font-family: var(--sans); font-weight: 700; font-size: 15px; }
+.nav-cta:hover { filter: none; transform: translateY(-1px); }
+.hero-pane { display: none !important; }
+
+/* ---- footer overhaul ---- */
+.footer-colophon { border-top: 1px solid var(--rule); }
+.foot-wordmark { font-family: var(--display); font-weight: 800; font-size: 30px; letter-spacing: -0.04em; color: var(--ink); }
+</style>
+</head>
+<body>
+
+<!-- Tree-shadow animated background. Two depth layers + SVG
+     turbulence filter + rAF canopy sway. Sits behind everything
+     (position:fixed, z-index 0); pointer-events disabled so it
+     never blocks clicks. Imported from Claude Design. -->
+<div class="tree-shadow" aria-hidden="true">
+  <div class="tree-shadow__layer tree-shadow__layer--back" id="ts-back"></div>
+  <div class="tree-shadow__layer tree-shadow__layer--front" id="ts-front"></div>
+  <div class="tree-shadow__wash"></div>
+  <div class="tree-shadow__vignette"></div>
+  <svg class="tree-shadow__svg" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="ts-wind-front" x="-12%" y="-12%" width="124%" height="124%"
+              color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.011 0.017"
+                      numOctaves="2" seed="7" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="0"
+                           xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+      <filter id="ts-wind-back" x="-12%" y="-12%" width="124%" height="124%"
+              color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.007 0.012"
+                      numOctaves="1" seed="3" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="0"
+                           xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </defs>
+  </svg>
+</div>
+<script>
+/* Tree-shadow motion — canopy sway only. The leaf-flutter rig
+   (feDisplacementMap + feTurbulence reseeding per frame) was the
+   dominant GPU cost; dropped. The SVG defs in the DOM stay put
+   in case we want to bring flutter back. No dependencies.
+   Respects prefers-reduced-motion. */
+(function () {
+  const front = document.getElementById("ts-front");
+  const back  = document.getElementById("ts-back");
+  if (!front || !back) return;
+
+  const P = window.TreeShadow = window.TreeShadow || {};
+  P.windStrength = P.windStrength ?? 2.0;
+  P.windSpeed    = P.windSpeed    ?? 1.9;
+  P.enabled      = P.enabled      ?? true;
+
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const BASE_BACK  = "scaleX(-1) scale(1.22) rotate(3.5deg)";
+  const BASE_FRONT = "scale(1.06) rotate(-1.2deg)";
+
+  const start = performance.now();
+
+  function frame(now) {
+    const t = (now - start) / 1000;
+    const sp = P.windSpeed;
+    const amp = P.windStrength;
+
+    const swayF = (5.5 * Math.sin(t * 0.32 * sp) + 2.0 * Math.sin(t * 0.83 * sp)) * amp;
+    const rotF  = (0.45 * Math.sin(t * 0.26 * sp)) * amp;
+    const swayB = (10 * Math.sin(t * 0.21 * sp + 0.5) + 3 * Math.sin(t * 0.55 * sp)) * amp;
+    const rotB  = (0.8 * Math.sin(t * 0.17 * sp + 0.4)) * amp;
+
+    front.style.transform =
+      `${BASE_FRONT} translate3d(${swayF.toFixed(2)}px, ${(swayF*0.18).toFixed(2)}px, 0) rotate(${rotF.toFixed(3)}deg)`;
+    back.style.transform =
+      `${BASE_BACK} translate3d(${swayB.toFixed(2)}px, ${(swayB*0.2).toFixed(2)}px, 0) rotate(${rotB.toFixed(3)}deg)`;
+
+    if (P.enabled && !reduce && !document.hidden) requestAnimationFrame(frame);
+  }
+
+  if (reduce) {
+    front.style.transform = BASE_FRONT; back.style.transform = BASE_BACK;
+  } else {
+    requestAnimationFrame(frame);
+  }
+
+  // Page Visibility — when the tab is hidden the rAF loop self-suspends
+  // (the !document.hidden gate above). Restart it on return.
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && P.enabled && !reduce) requestAnimationFrame(frame);
+  });
+})();
+</script>
+
+<!-- ============================================================
+     NAV
+     ============================================================ -->
+<nav class="nav" id="nav">
+  <a href="#" class="nav-brand">
+    <img src="/assets/handdrawn-37.svg" alt="portaltext" />
+  </a>
+  <div class="nav-actions">
+    <button class="theme-toggle js-theme-toggle" type="button" aria-label="Switch to dark mode"><span class="theme-icon" aria-hidden="true"></span></button>
+    <button class="nav-cta" onclick="document.getElementById('install').scrollIntoView({behavior:'smooth'})">Install</button>
+  </div>
+</nav>
+
+<!-- ============================================================
+     HERO — sticky scrollytelling spread.
+     .hero-pin is a tall scroll container; .hero sticks inside it
+     so the cat illo stays on screen while the right-side phases
+     (wordmark → headline → description) cross-fade based on
+     scroll position. After the pin ends, the page resumes normal
+     scrolling into the About section.
+     ============================================================ -->
+<div class="hero-pin">
+  <header class="hero">
+
+    <!-- Masthead row: logo on the left, install CTA on the right. -->
+    <div class="masthead">
+      <a href="#" class="masthead-brand" aria-label="portaltext">
+        <img src="/assets/handdrawn-37.svg" alt="portaltext" />
+      </a>
+      <div class="masthead-cta">
+        <button class="theme-toggle js-theme-toggle" type="button" aria-label="Switch to dark mode"><span class="theme-icon" aria-hidden="true"></span></button>
+        <button class="nav-cta" onclick="document.getElementById('install').scrollIntoView({behavior:'smooth'})">Install</button>
+      </div>
+    </div>
+
+    <!-- Two-column composition: cat illustration left, phased
+         content on the right. -->
+    <div class="hero-spread">
+      <div class="hero-illo">
+        <img src="/assets/colorcat.png" alt="portaltext" style="position: absolute; top: -319px; left: -49px; right: auto; bottom: auto; width: 687px; transform: none; translate: none;" />
+      </div>
+
+      <div class="hero-text">
+        <!-- Three layered phases. Initial state: phase-1 visible,
+             others at opacity 0. Scroll-driven JS swaps which one
+             is showing as the user scrolls through the .hero-pin. -->
+        <div class="hero-phase hero-phase-1">
+          <img class="hero-wordmark-big" src="/assets/handdrawn-37.svg" alt="portaltext" />
+        </div>
+        <div class="hero-phase hero-phase-2">
+          <h1 class="hero-headline">
+            Every link <em>is a <span class="bl">portal</span></em>.
+          </h1>
+        </div>
+      </div>
+    </div>
+  </header>
+</div>
+
+<!-- ============================================================
+     BODY — vertical narrative, varied section shapes.
+     The cream white runs continuously through every section so
+     boundaries blur; bridging ornaments (cat halves, drifting
+     tape, marginalia paintings) cross seams to disguise where
+     one section ends and the next begins.
+     ============================================================ -->
+<main>
+
+  <!-- §A — OPENING THESIS: pinned headline + an acetate-film card that
+       slides in from the right to rest beside the copy as you scroll. -->
+  <div class="thesis-pin">
+  <section class="sec thesis-sec">
+    <div class="ov">
+      <!-- hand-drawn sticker, left gutter (right side is reserved for the rotary card) -->
+      <img class="sticker" src="/assets/handdrawn-19.svg" alt="" aria-hidden="true" style="left:-66px; top:-30px; width:84px; rotate:-9deg; --sticker-op:.42;" />
+      <!-- top half (head) of the vertical leaping cat, moved into the reading-layer (§01) section -->
+      <img class="sticker" src="/assets/handdrawn-06.svg" alt="" aria-hidden="true" style="left:906px; top:557px; width:192px; rotate:-1.84deg; --sticker-op:.5;" />
+      <div class="thesis-rotary" aria-hidden="true">
+        <div class="ow-card" id="owCard">
+          <p class="ow-kicker">what we mean</p>
+          <h3 class="ow-term">the open web</h3>
+          <p class="ow-def">Pages anyone can publish and anyone can read &mdash; <b>no login, no app, no gatekeeper</b> standing between you and the page. portaltext rides along on all of it.</p>
+        </div>
+      </div>
+      <div class="thesis-grid">
+        <div class="thesis-copy reveal reveal-from-l">
+          <div class="sec-marker"><span class="num">01</span> the reading layer</div>
+          <h2 class="thesis-head">Contextualize<br />the <span class="bl">open&nbsp;web</span>.</h2>
+          <p class="thesis-body">portaltext is a small browser extension. Hover any link, image, or PDF on the internet and a short, context-aware summary appears &mdash; right there, on the page you&rsquo;re already reading.</p>
+          <div class="thesis-cta">
+            <a class="pill-lime" href="#install">Add to browser</a>
+          </div>
+        </div>
+        <div class="thesis-right" aria-hidden="true"></div>
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <!-- §2 — Demo carousel: sticky vertical-scroll-driven horizontal
+       slide through four scenes (Borges / 2 Tim 3 / paintings / HN).
+       Left lede stays pinned. Mechanic mirrors the .hero-pin pattern. -->
+  <section class="demo-scroll-wrapper block-demo" id="demo">
+    <div class="demo-scroll-sticky">
+      <div class="demo-leaves" aria-hidden="true"></div>
+      <div class="demo-scroll-grid">
+        <div class="demo-lede demo-lede-fixed">
+          <div class="sec-marker"><span class="num">02</span> try it live</div>
+          <h3>Hover any <span class="bl">link</span>.</h3>
+          <img class="demo-arrow" src="/assets/handdrawn-27.svg" alt="" aria-hidden="true" style="position:absolute; left:334px; top:410px; width:125px; rotate:31.48deg;" />
+          <div class="demo-progress" id="demoProgress" aria-hidden="true">
+            <span class="demo-dot active"></span>
+            <span class="demo-dot"></span>
+            <span class="demo-dot"></span>
+            <span class="demo-dot"></span>
+            <span class="demo-dot"></span>
+          </div>
+        </div>
+        <div class="demo-track-viewport">
+          <div class="demo-track" id="demoTrack">
+
+            <!-- Scene 1 — Borges -->
+            <article class="demo-scene">
+              <div class="demo-passage">
+                <h3>The Garden of Forking Paths</h3>
+                <p class="byline">Jorge Luis Borges · 1941</p>
+                <p>
+                  "<a class="wikilink" data-term="The Garden of Forking Paths">The Garden of Forking Paths</a>" (Spanish: <em>El jardín de senderos que se bifurcan</em>) is a 1941 short story by the <a class="wikilink" data-term="Argentina">Argentine</a> writer <a class="wikilink" data-term="Jorge Luis Borges">Jorge Luis Borges</a>. It opens as the <a class="wikilink" data-term="World War I">World War I</a> confession of Yu Tsun, a Chinese professor working as a spy for the <a class="wikilink" data-term="German Empire">German Empire</a>, and ends &mdash; through one of Borges's most elegant feints &mdash; as a meditation on time, contingency, and the <a class="wikilink" data-term="Labyrinth">labyrinth</a>.
+                </p>
+                <p>
+                  The story's central conceit is a "novel" left behind by a forgotten <a class="wikilink" data-term="China">Chinese</a> governor, Ts'ui Pên: a manuscript in which, at every junction, the protagonist takes every possible path simultaneously. Decades before the <a class="wikilink" data-term="Many-worlds interpretation">Many-Worlds interpretation</a> of <a class="wikilink" data-term="Quantum mechanics">quantum mechanics</a>, Borges had imagined a universe of forking timelines &mdash; anticipating themes later picked up by <a class="wikilink" data-term="Italo Calvino">Italo Calvino</a>, <a class="wikilink" data-term="Hugh Everett III">Hugh Everett</a>, and <a class="wikilink" data-term="Hypertext fiction">hypertext fiction</a>.
+                </p>
+              </div>
+            </article>
+
+            <!-- Scene 2 — Bible: 2 Timothy 3:10–17 NIV -->
+            <article class="demo-scene">
+              <div class="demo-passage demo-scene-bible">
+                <h3>2 Timothy 3<span style="font-family:var(--sans);font-size:0.45em;letter-spacing:0.04em;color:var(--muted);font-weight:500;vertical-align:0.4em;margin-left:6px;">10&ndash;17</span></h3>
+                <p class="byline">A Final Charge to <a class="wikilink" data-term="Timothy (biblical figure)">Timothy</a> &middot; NIV</p>
+                <p class="verse">
+                  <span class="verse-num">10</span>You, however, know all about my teaching, my way of life, my purpose, faith, patience, love, endurance, <span class="verse-num">11</span>persecutions, sufferings&mdash;what kinds of things happened to me in <a class="wikilink" data-term="Pisidian Antioch">Antioch</a>, <a class="wikilink" data-term="Iconium">Iconium</a> and <a class="wikilink" data-term="Lystra">Lystra</a>, the persecutions I endured. Yet the Lord rescued me from all of them. <span class="verse-num">12</span>In fact, everyone who wants to live a godly life in <a class="wikilink" data-term="Jesus">Christ Jesus</a> will be persecuted, <span class="verse-num">13</span>while evildoers and impostors will go from bad to worse, deceiving and being deceived. <span class="verse-num">14</span>But as for you, continue in what you have learned and have become convinced of, because you know those from whom you learned it, <span class="verse-num">15</span>and how from infancy you have known the <a class="wikilink" data-term="Bible">Holy Scriptures</a>, which are able to make you wise for <a class="wikilink" data-term="Salvation in Christianity">salvation</a> through faith in Christ Jesus. <span class="verse-num">16</span>All Scripture is <a class="wikilink" data-term="Biblical inspiration">God-breathed</a> and is useful for teaching, rebuking, correcting and training in <a class="wikilink" data-term="Righteousness">righteousness</a>, <span class="verse-num">17</span>so that the servant of God may be thoroughly equipped for every good work.
+                </p>
+              </div>
+            </article>
+
+            <!-- Scene 3 — Paintings: hover any to see the wall label -->
+            <article class="demo-scene">
+              <div class="demo-passage">
+                <h3>Turn the web into a museum</h3>
+                <div class="demo-paintings">
+                  <a class="extlink painting-hover painting-tile" data-path="/assets/paintings/house_of_pere_lacroix_1963.10.102.jpg" aria-label="Cézanne, House of Père Lacroix">
+                    <img src="/assets/paintings/house_of_pere_lacroix_1963.10.102.jpg" alt="" loading="lazy" />
+                  </a>
+                  <a class="extlink painting-hover painting-tile" data-path="/assets/paintings/picking_flowers_1970.17.61.jpg" aria-label="Renoir, Picking Flowers in a Field">
+                    <img src="/assets/paintings/picking_flowers_1970.17.61.jpg" alt="" loading="lazy" />
+                  </a>
+                  <a class="extlink painting-hover painting-tile" data-path="/assets/paintings/woman_seated_under_the_willows_1963.10.178.jpg" aria-label="Monet, Woman Seated Under the Willows">
+                    <img src="/assets/paintings/woman_seated_under_the_willows_1963.10.178.jpg" alt="" loading="lazy" />
+                  </a>
+                  <a class="extlink painting-hover painting-tile" data-path="/assets/paintings/woman_with_a_cat_1950.12.1.jpg" aria-label="Renoir, Woman with a Cat">
+                    <img src="/assets/paintings/woman_with_a_cat_1950.12.1.jpg" alt="" loading="lazy" />
+                  </a>
+                </div>
+              </div>
+            </article>
+
+            <!-- Scene 4 — Hacker News: top 6 stories, our styling -->
+            <article class="demo-scene">
+              <div class="demo-passage demo-hn">
+                <h3>Today on Hacker News</h3>
+                <ol class="hn-list" id="hnList">
+                  <li class="hn-loading">Loading the front page&hellip;</li>
+                </ol>
+              </div>
+            </article>
+
+            <!-- Scene 5 — Academic references: scientific paper citations -->
+            <article class="demo-scene">
+              <div class="demo-passage demo-scene-refs">
+                <h3>References</h3>
+                <ol class="refs-list">
+                  <li class="ref-item">
+                    Abubakar M et al (2024) GLP-1/GIP agonist as an intriguing and ultimate remedy for combating alzheimer&rsquo;s disease through its supporting DPP4 inhibitors: a review. <em>Curr Top Med Chem</em> 24(19):1635&ndash;1664. <a class="extlink ref-cite" href="https://doi.org/10.2174/0115680266284726" target="_blank" rel="noopener noreferrer">DOI</a><span class="ref-sep">&middot;</span><a class="extlink ref-cite" href="https://pubmed.ncbi.nlm.nih.gov/?term=GLP-1+GIP+agonist+Alzheimer+DPP4+inhibitors+Abubakar" target="_blank" rel="noopener noreferrer">PubMed</a>
+                  </li>
+                  <li class="ref-item">
+                    Acevedo-Fani A, Singh H (2021) Biopolymer interactions during gastric digestion: implications for nutrient delivery. <em>Food Hydrocolloids</em> 116:106644. <a class="extlink ref-cite" href="https://doi.org/10.1016/j.foodhyd.2021.106644" target="_blank" rel="noopener noreferrer">DOI</a>
+                  </li>
+                  <li class="ref-item">
+                    Adams SH et al (2020) Perspective: guiding principles for the implementation of personalized nutrition approaches that benefit health and function. <em>Adv Nutr</em> 11(1):25&ndash;34. <a class="extlink ref-cite" href="https://doi.org/10.1093/advances/nmz086" target="_blank" rel="noopener noreferrer">DOI</a><span class="ref-sep">&middot;</span><a class="extlink ref-cite" href="https://www.ncbi.nlm.nih.gov/pmc/?term=Personalized+nutrition+Adams+2020" target="_blank" rel="noopener noreferrer">PMC</a><span class="ref-sep">&middot;</span><a class="extlink ref-cite" href="https://pubmed.ncbi.nlm.nih.gov/?term=Personalized+nutrition+Adams+2020" target="_blank" rel="noopener noreferrer">PubMed</a>
+                  </li>
+                  <li class="ref-item">
+                    Adan RA et al (2019) Nutritional psychiatry: Towards improving mental health by what you eat. <em>Eur Neuropsychopharmacol</em> 29(12):1321&ndash;1332. <a class="extlink ref-cite" href="https://doi.org/10.1016/j.euroneuro.2019.10.011" target="_blank" rel="noopener noreferrer">DOI</a><span class="ref-sep">&middot;</span><a class="extlink ref-cite" href="https://pubmed.ncbi.nlm.nih.gov/31735529/" target="_blank" rel="noopener noreferrer">PubMed</a>
+                  </li>
+                </ol>
+              </div>
+            </article>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- §3 (the standalone "every link is a portal" chartreuse break) removed.
+       Its color-pop role moved onto the demo stage above; its copy was a
+       restatement of the hero + thesis. -->
+
+  <!-- §C ("What you get" value cards) removed — its points were already
+       covered: the in-place benefit is shown by the whole demo + stated in
+       the thesis, formats live in Pricing, and privacy repeats in the FAQ.
+       Portal break now flows straight into the offer. -->
+
+  <!-- §E — SUPPORT: no tiers, no comparison table. Free is the product;
+       the supporter tier is a thank-you, pitched as exactly that. The
+       id stays "pricing" so old deep links (extension popup, welcome
+       footer) keep resolving. -->
+  <div class="pause-pin">
+  <section class="sec pricing-sec" id="pricing">
+    <div class="ov">
+      <!-- a stretching cat tucked into the support gutter -->
+      <img class="sticker" src="/assets/handdrawn-11.svg" alt="" aria-hidden="true" style="left:-238px; top:335px; width:426px; rotate:15.64deg; --sticker-op:.5;" />
+      <!-- bottom half (rear) of the vertical leaping cat, moved into the support (§04) section -->
+      <img class="sticker" src="/assets/handdrawn-07.svg" alt="" aria-hidden="true" style="left:900px; top:-85px; width:172px; rotate:-0.87deg; --sticker-op:.5;" />
+      <div class="sec-marker pause-item"><span class="num">04</span> support</div>
+      <h2 class="sec-h pause-item">Free. <span class="bl">For everyone.</span></h2>
+      <div class="support-row">
+        <article class="support-note pause-item">
+          <p>portaltext is made by one person &mdash; <a href="https://twitter.com/145k4" target="_blank" rel="noopener noreferrer">Alaska Hoffman</a>, a poet, artist, and solo developer &mdash; and the AI behind every hover costs real money to run.</p>
+          <p>There&rsquo;s no paid tier to compare against, because everything here works on the free plan: no account, no trial, no wall. But if portaltext earns a place in your everyday reading and you&rsquo;d like to chip in, it would mean the world. Supporters get unlimited access to every feature &mdash; as a thank-you, and to help cover everyone else&rsquo;s hovers.</p>
+          <p class="support-soon">Supporting opens soon &middot; until then, it&rsquo;s all just free</p>
+        </article>
+        <figure class="support-gif pause-item">
+          <img src="/assets/made-by-alaska.webp" alt="A polaroid of two cats, captioned: made by alaska!" loading="lazy" width="520" height="292" />
+        </figure>
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <!-- §F — FAQ: clean two-column -->
+  <div class="pause-pin">
+  <section class="sec faq-sec">
+    <div class="ov">
+      <!-- hand-drawn sticker: a big question mark for the FAQ -->
+      <img class="sticker" src="/assets/handdrawn-21.svg" alt="" aria-hidden="true" style="left:1115px; top:-17px; width:169px; rotate:8deg; --sticker-op:.5;" />
+      <div class="sec-marker pause-item"><span class="num">05</span> questions</div>
+      <h2 class="sec-h pause-item">Good questions.</h2>
+      <div class="faq2">
+        <div class="qa pause-item"><p class="q">Is it really free?</p><p class="a">Yes &mdash; every feature, no account, no trial. There&rsquo;s a generous daily allowance so the AI bill stays sane, and a supporter tier (unlimited everything) is coming for people who&rsquo;d like to help cover everyone&rsquo;s hovers.</p></div>
+        <div class="qa pause-item"><p class="q">Which browsers?</p><p class="a">Anything Chromium &mdash; Chrome, Edge, Brave, Arc, Opera. Firefox soon.</p></div>
+        <div class="qa pause-item"><p class="q">How does it work?</p><p class="a">An AI reads the page you&rsquo;re on and the page behind the link, then writes a short summary framed by both. It&rsquo;s the gel between two pages, not a generator &mdash; so it stays grounded in what&rsquo;s already there and doesn&rsquo;t make things up.</p></div>
+        <div class="qa pause-item"><p class="q">Is my reading private?</p><p class="a">We send only the URL and a small page excerpt. No tracking, no hover history, no ads.</p></div>
+        <div class="qa pause-item"><p class="q">Who made this?</p><p class="a">portaltext is made by Alaska Hoffman, a poet, artist, and solo dev. Always online <a href="https://twitter.com/145k4" target="_blank" rel="noopener noreferrer">@145k4</a>.</p></div>
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <!-- §5 — (retired) Renoir cat-plate removed; the cat now lives in
+       the hero, the green portal break, and the footer. -->
+
+  <!-- § Pricing moved up into the restructured value→pricing→faq run above. -->
+
+  <!-- §7 — (retired) Willows closing plate removed; the install CTA
+       follows the pricing directly now. -->
+
+  <!-- §G — INSTALL finale: full-bleed chartreuse + frosted form window.
+       Signup form IDs/classes preserved so the existing JS still binds.
+       Wrapped in .pause-pin so it pins and staggers in like pricing/FAQ. -->
+  <div class="pause-pin">
+  <section class="install-finale" id="install">
+    <div class="demo-leaves" aria-hidden="true"></div>
+    <!-- white doodles scattered across the lime, behind the copy + form -->
+    <img class="sticker sticker--white" src="/assets/handdrawn-20.svg" alt="" aria-hidden="true" style="z-index:1; left:30px; top:614px; width:126px; rotate:-12deg; --sticker-op:.26;" />
+    <img class="sticker sticker--white" src="/assets/handdrawn-26.svg" alt="" aria-hidden="true" style="z-index:1; left:493px; top:227px; width:321px; rotate:8deg; --sticker-op:.2;" />
+    <div class="if-inner">
+      <div class="if-copy">
+        <h2 class="if-head pause-item">Add it to<br /><span class="bl">every</span> site.</h2>
+        <p class="if-sub pause-item">Free for everyone &mdash; tooltips, PDFs, citations, full-page annotation. No account, no setup; it works the second it&rsquo;s installed.</p>
+      </div>
+      <div class="form-window pause-item">
+        <div class="install-direct">
+          <div class="install-stage">
+            <a href="https://chromewebstore.google.com/detail/portaltext/hlhjiehpelkfhdcihpdpkmgodapjlfcb" target="_blank" rel="noopener noreferrer" class="install-btn">Add to Chrome →</a>
+          </div>
+          <p class="signup-helper">Chromium browsers &mdash; Chrome, Edge, Brave, Arc, Opera. Firefox soon.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  </div>
+
+</main>
+
+<!-- ============================================================
+     FOOTER — editorial colophon
+     ============================================================ -->
+<footer class="reveal reveal-from-b">
+  <div class="footer-colophon">
+    <div class="footer-identity">
+      <img src="/assets/handdrawn-36.svg" alt="portaltext" />
+      <p class="footer-identity-tag">Contextualize the open web. One hover at a time.</p>
+    </div>
+    <nav class="footer-nav">
+      <a href="#"><img src="/assets/handdrawn-32.svg" alt="" class="footer-home" />Home</a>
+      <a href="#install">Install</a>
+      <a href="/privacy">Privacy</a>
+      <a href="mailto:hello@portaltext.com">Contact</a>
+    </nav>
+    <div class="footer-meta-col">
+      <div>made with <img src="/assets/handdrawn-26.svg" alt="love" /> in 2026</div>
+      <div>Set in LINE Seed JP, Pirata One &amp; IBM Plex Mono</div>
+      <img src="/assets/handdrawn-35.svg" alt="prtltxt" class="stamp" />
+    </div>
+  </div>
+</footer>
+
+<!-- ============================================================
+     LIMIT-REACHED BANNER (hidden by default; shown after 20 hovers)
+     ============================================================ -->
+<div class="limit-banner" id="limitBanner" role="alert" aria-live="polite">
+  <img src="/assets/handdrawn-10.svg" alt="" class="limit-cat" />
+  <div class="limit-text">
+    You&rsquo;ve had a good taste. The extension is free and far more generous &mdash; or come back tomorrow for more hovers here.
+  </div>
+  <button class="limit-cta" onclick="document.getElementById('install').scrollIntoView({behavior:'smooth'})">Install →</button>
+</div>
+
+<!-- ============================================================
+     Runtime — the live tooltip engine
+     ============================================================ -->
+<script src="/portaltext.js" data-endpoint="/summary"></script>
+
+<script>
+  /* --------------------------------------------------------
+     Theme toggle — persist light/dark preference in
+     localStorage, apply data-theme on <html>. The toggle
+     button label always shows the OTHER state ("dark" in
+     light mode, "light" in dark mode).
+     -------------------------------------------------------- */
+  const THEME_KEY = 'portaltext-theme';
+  const themeToggleEls = document.querySelectorAll('.js-theme-toggle');
+  function applyTheme(theme) {
+    const t = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    const next = t === 'dark' ? 'light' : 'dark';
+    themeToggleEls.forEach(el => { el.setAttribute('aria-label', 'Switch to ' + next + ' mode'); });
+  }
+  try { applyTheme(localStorage.getItem(THEME_KEY) || 'light'); } catch {}
+  themeToggleEls.forEach(el => {
+    el.addEventListener('click', () => {
+      const next = (document.documentElement.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
+      applyTheme(next);
+      try { localStorage.setItem(THEME_KEY, next); } catch {}
+    });
+  });
+
+  /* --------------------------------------------------------
+     rAF throttle for scroll handlers. Four separate handlers each
+     read layout (getBoundingClientRect) — letting them run per
+     scroll EVENT means several forced layouts per frame and visible
+     jank on long pages. Wrapping each in one rAF tick caps every
+     handler at once per painted frame.
+     -------------------------------------------------------- */
+  function rafThrottle(fn) {
+    let scheduled = false;
+    return () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => { scheduled = false; fn(); });
+    };
+  }
+
+  /* --------------------------------------------------------
+     Sticky nav background on scroll
+     -------------------------------------------------------- */
+  const nav = document.getElementById('nav');
+  const heroPinForNav = document.querySelector('.hero-pin');
+  let lastScroll = 0;
+  function onScroll() {
+    const y = window.scrollY;
+    // Reveal the fixed nav only after the hero-pin has fully
+    // scrolled past — until then, the masthead inside the hero is
+    // visible and the nav would just double up on top of it.
+    if (heroPinForNav) {
+      // Map scroll position to nav opacity. Nav starts fading in
+      // ~80px BEFORE the hero-pin unsticks (i.e., while masthead
+      // is still pinned at top) and reaches full opacity AT the
+      // unstick moment — so the cross-fade happens during the
+      // scroll itself, never lagging.
+      const ih = window.innerHeight;
+      const bottom = heroPinForNav.getBoundingClientRect().bottom;
+      const start = ih + 80;
+      const end   = ih;
+      let opacity = (start - bottom) / (start - end);
+      if (opacity < 0) opacity = 0;
+      if (opacity > 1) opacity = 1;
+      nav.style.opacity = opacity;
+      nav.style.pointerEvents = opacity > 0.5 ? 'auto' : 'none';
+    } else {
+      nav.classList.toggle('scrolled', y > 32);
+    }
+    lastScroll = y;
+  }
+  window.addEventListener('scroll', rafThrottle(onScroll), { passive: true });
+  onScroll();
+
+  /* --------------------------------------------------------
+     Hero scrollytelling — cross-fade phases based on scroll
+     position within the .hero-pin container. While the user
+     scrolls through the pin, the right-side content cycles:
+     wordmark → headline → description. Cat illo stays put
+     because it's part of the sticky .hero.
+     -------------------------------------------------------- */
+  const heroPin    = document.querySelector('.hero-pin');
+  const heroPhases = document.querySelectorAll('.hero-phase');
+  function updateHeroPhases() {
+    if (!heroPin || heroPhases.length < 2) return;
+    const r = heroPin.getBoundingClientRect();
+    const totalScroll = r.height - window.innerHeight;
+    if (totalScroll <= 0) return;
+    const progress = Math.max(0, Math.min(1, -r.top / totalScroll));
+    const fadeIn  = (p, s, e) => Math.max(0, Math.min(1, (p - s) / (e - s)));
+    const fadeOut = (p, s, e) => 1 - fadeIn(p, s, e);
+    // Phase 1 (wordmark): visible 0–0.40, fades out 0.40–0.55
+    heroPhases[0].style.opacity = fadeOut(progress, 0.40, 0.55);
+    // Phase 2 (headline): fades in 0.50–0.66, stays visible
+    heroPhases[1].style.opacity = fadeIn(progress, 0.50, 0.66);
+  }
+  window.addEventListener('scroll', rafThrottle(updateHeroPhases), { passive: true });
+  updateHeroPhases();
+
+  /* --------------------------------------------------------
+     Scroll-paused sections (pricing + FAQ). Each .pause-pin is
+     a tall track; its .sec sticks for ~1 viewport. As the user
+     scrolls through the pin, the section's .pause-item children
+     stagger in (header → cards/questions). Items finish well
+     before the pin releases, so there's a deliberate "rest"
+     where the whole section sits still before the page moves on.
+     Desktop only — small screens have no hidden state.
+     -------------------------------------------------------- */
+  const pausePins = document.querySelectorAll('.pause-pin');
+  function updatePausePins() {
+    const mobile = window.innerWidth <= 760;
+    // Deep-link bypass: if the URL hash points at an element inside one of
+    // these pins (e.g. /staging#pricing), the user came to read that section
+    // immediately, not to scroll through the staggered reveal. Force every
+    // pause-item in the matching pin into the 'in' state right away.
+    let hashTarget = null;
+    try { if (location.hash.length > 1) hashTarget = document.querySelector(location.hash); } catch {}
+    pausePins.forEach((pin) => {
+      const items = pin.querySelectorAll('.pause-item');
+      if (mobile || (hashTarget && pin.contains(hashTarget))) {
+        items.forEach((el) => el.classList.add('in'));
+        return;
+      }
+      const vh = window.innerHeight;
+      const r = pin.getBoundingClientRect();
+      const totalScroll = r.height - vh;
+      if (totalScroll <= 0) { items.forEach((el) => el.classList.add('in')); return; }
+      // Reveal metric starts as the section APPROACHES (scrolls up into
+      // view) — not only once it pins — so the content is essentially all
+      // present by the moment the section locks at the top. This kills the
+      // "pinned but blank" gap. The long remainder of the pin is the rest.
+      const approach = vh * 0.55;                 // begin revealing ~45% into view
+      const span = approach + totalScroll * 0.12; // finish revealing right around the lock
+      const p = Math.max(0, Math.min(1, (approach - r.top) / span));
+      const denom = Math.max(1, items.length - 1);
+      items.forEach((el, i) => {
+        const trigger = (i / denom) * 0.82;
+        el.classList.toggle('in', p >= trigger);
+      });
+    });
+  }
+  window.addEventListener('scroll', rafThrottle(updatePausePins), { passive: true });
+  window.addEventListener('resize', updatePausePins, { passive: true });
+  // Re-run when the hash changes (user clicks an in-page link like #pricing
+  // after the page is already loaded) so a freshly-targeted pin reveals.
+  window.addEventListener('hashchange', updatePausePins);
+  updatePausePins();
+
+  /* --------------------------------------------------------
+     Demo carousel — sticky horizontal scroll-hijack.
+     Scroll progress is mapped piecewise across 5 dwell phases
+     (one per scene, "rest" while the user reads) interleaved
+     with 4 transition phases (slide between scenes). Dwells
+     are weighted 2× transitions so each scene gets a generous
+     pause before the next slides in.
+     -------------------------------------------------------- */
+  const demoWrapper = document.querySelector('.demo-scroll-wrapper');
+  const demoTrack   = document.getElementById('demoTrack');
+  const demoDots    = document.querySelectorAll('.demo-progress .demo-dot');
+  const DEMO_SCENES      = 5;
+  const SCENE_WIDTH_PCT  = 100 / DEMO_SCENES;          // 20 (% of the 500%-wide track per scene)
+  const DWELL_WEIGHT     = 2.0;
+  const TRANS_WEIGHT     = 1.0;
+  // Build the scroll-progress timeline once: alternating dwell/transition segments.
+  const _totalWeight = DEMO_SCENES * DWELL_WEIGHT + (DEMO_SCENES - 1) * TRANS_WEIGHT;
+  const _dwellLen    = DWELL_WEIGHT / _totalWeight;
+  const _transLen    = TRANS_WEIGHT / _totalWeight;
+  const _demoSegments = [];
+  {
+    let cursor = 0;
+    for (let i = 0; i < DEMO_SCENES; i++) {
+      _demoSegments.push({ type: 'd', scene: i, start: cursor, end: cursor + _dwellLen });
+      cursor += _dwellLen;
+      if (i < DEMO_SCENES - 1) {
+        _demoSegments.push({ type: 't', from: i, start: cursor, end: cursor + _transLen });
+        cursor += _transLen;
+      }
+    }
+  }
+  // Nav clearance — keep in sync with .demo-scroll-sticky { top: 90px; height: calc(100vh - 90px); }
+  const DEMO_NAV_OFFSET = 90;
+  function updateDemoCarousel() {
+    if (!demoWrapper || !demoTrack) return;
+    // Mobile fallback: stacked layout has no sticky parent, skip transform.
+    if (window.innerWidth <= 768) {
+      demoTrack.style.transform = '';
+      return;
+    }
+    const r = demoWrapper.getBoundingClientRect();
+    const stickyHeight = window.innerHeight - DEMO_NAV_OFFSET;
+    const totalScroll  = r.height - stickyHeight;
+    if (totalScroll <= 0) return;
+    // Progress starts at 0 when wrapper.top reaches the sticky activation
+    // point (top = NAV_OFFSET below viewport top), reaches 1 when the
+    // wrapper has scrolled its full sticky budget.
+    const progress = Math.max(0, Math.min(1, (DEMO_NAV_OFFSET - r.top) / totalScroll));
+    let sceneOffset = DEMO_SCENES - 1;
+    for (const seg of _demoSegments) {
+      if (progress < seg.end + 1e-6) {
+        if (seg.type === 'd') {
+          sceneOffset = seg.scene;
+        } else {
+          const local = (progress - seg.start) / (seg.end - seg.start);
+          sceneOffset = seg.from + Math.max(0, Math.min(1, local));
+        }
+        break;
+      }
+    }
+    const offsetPct = sceneOffset * SCENE_WIDTH_PCT;
+    demoTrack.style.transform = `translate3d(-${offsetPct}%, 0, 0)`;
+    const activeIndex = Math.min(DEMO_SCENES - 1, Math.round(sceneOffset));
+    demoDots.forEach((d, i) => d.classList.toggle('active', i === activeIndex));
+  }
+  window.addEventListener('scroll', rafThrottle(updateDemoCarousel), { passive: true });
+  window.addEventListener('resize', updateDemoCarousel);
+  updateDemoCarousel();
+
+  /* --------------------------------------------------------
+     Hacker News scene — fetch top 6 stories from the public
+     Firebase API and render them in our serif-and-rule style.
+     Titles are extlinks so portaltext summarizes the linked
+     article on hover; comments link goes to the HN thread.
+     -------------------------------------------------------- */
+  (async function loadHN() {
+    const list = document.getElementById('hnList');
+    if (!list) return;
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+    );
+    try {
+      const idsRes = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
+      if (!idsRes.ok) throw new Error('topstories ' + idsRes.status);
+      const ids = await idsRes.json();
+      const top = ids.slice(0, 6);
+      const items = await Promise.all(top.map(id =>
+        fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r => r.json())
+      ));
+      list.innerHTML = items.map((it, i) => {
+        const articleUrl  = it.url || ('https://news.ycombinator.com/item?id=' + it.id);
+        const commentsUrl = 'https://news.ycombinator.com/item?id=' + it.id;
+        // data-url is required by portaltext.js classify() for extlinks —
+        // without it the hover is rejected even though href is set.
+        return `
+          <li class="hn-row">
+            <div class="hn-rank">${i + 1}</div>
+            <div class="hn-body">
+              <a class="hn-title extlink" href="${esc(articleUrl)}" data-url="${esc(articleUrl)}" target="_blank" rel="noopener noreferrer">${esc(it.title)}</a>
+              <div class="hn-meta">${it.score || 0} points &middot; by ${esc(it.by)} &middot; <a class="extlink" href="${esc(commentsUrl)}" data-url="${esc(commentsUrl)}" target="_blank" rel="noopener noreferrer">${it.descendants || 0} comments</a></div>
+            </div>
+          </li>
+        `;
+      }).join('');
+    } catch (e) {
+      list.innerHTML = '<li class="hn-error">Couldn&rsquo;t reach Hacker News right now.</li>';
+    }
+  })();
+
+  /* --------------------------------------------------------
+     Reveal-on-scroll
+     -------------------------------------------------------- */
+  const revealObserver = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        revealObserver.unobserve(e.target);
+      }
+    }
+  }, { threshold: 0.15, rootMargin: '0px 0px -80px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+  /* --------------------------------------------------------
+     Painting hover targets — extlinks need a fully-qualified
+     data-url so the server can fetch the image back. Convert
+     each data-path to absolute against the current origin so
+     local dev (localhost:3000) and production (portaltext.com)
+     both work.
+     -------------------------------------------------------- */
+  for (const a of document.querySelectorAll('a.painting-hover[data-path]')) {
+    a.dataset.url = window.location.origin + a.dataset.path;
+  }
+
+  /* Any extlink with an href but no data-url won't hover (portaltext.js
+     classify() requires data-url explicitly). Copy href → data-url so the
+     references-scene citation links and any other static extlinks resolve. */
+  for (const a of document.querySelectorAll('a.extlink[href]:not([data-url])')) {
+    a.dataset.url = a.getAttribute('href');
+  }
+
+  /* --------------------------------------------------------
+     Demo hover counter
+     We watch the DOM for new .tooltip elements (the live
+     portaltext runtime appends one per hover). Each new
+     tooltip = +1 hover. After LIMIT, blank out the wikilinks
+     and surface the limit banner.
+     -------------------------------------------------------- */
+  const LIMIT = Infinity;   // hover limit disabled during testing
+  const STORAGE_KEY = 'portaltext-demo-hovers-' + new Date().toISOString().slice(0, 10);
+  let hoverCount = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10) || 0;
+  const counterEl = document.getElementById('demoCounter');
+  const banner    = document.getElementById('limitBanner');
+  const passage   = document.querySelector('.demo-scroll-wrapper');
+
+  function renderCounter() {
+    if (!counterEl) return;
+    counterEl.textContent = `${Math.min(hoverCount, LIMIT)} / ${LIMIT} hovers today`;
+  }
+  renderCounter();
+
+  function gateLinks() {
+    if (hoverCount < LIMIT) return;
+    if (passage) {
+      for (const a of passage.querySelectorAll('a.wikilink')) {
+        a.classList.remove('wikilink');
+        a.style.color = 'inherit';
+        a.style.borderBottom = '1px dotted rgba(28,28,25,0.18)';
+        a.style.cursor = 'default';
+      }
+    }
+    if (window.portaltext?.closeAllTooltips) window.portaltext.closeAllTooltips();
+    if (banner) banner.classList.add('visible');
+  }
+  gateLinks();
+
+  // Track tooltip appearances. portaltext appends .tooltip elements
+  // directly to document.body when a hover opens.
+  const seenTooltips = new WeakSet();
+  const tooltipObserver = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      for (const node of m.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        if (node.classList?.contains('tooltip') && !seenTooltips.has(node)) {
+          seenTooltips.add(node);
+          hoverCount++;
+          localStorage.setItem(STORAGE_KEY, String(hoverCount));
+          renderCounter();
+          if (hoverCount >= LIMIT) gateLinks();
+        }
+      }
+    }
+  });
+  tooltipObserver.observe(document.body, { childList: true });
+
+  /* --------------------------------------------------------
+     Drag-edit mode (toggle: Cmd/Ctrl + E)
+     Press the shortcut, then click and drag any ornament to
+     reposition it. The floating panel shows live top/left/
+     rotate values so you can copy them back into the source.
+     Arrow keys nudge the selected element by 1px (Shift+arrow
+     = 10px). R / Shift+R rotates by 1°.
+     -------------------------------------------------------- */
+  const DRAG_TARGETS = [
+    '.sticker',
+    '.marginalia',
+    '.plate-cat',
+    '.cat-arc',
+    '.install-sparkle',
+    '.install-sparkle img',
+    '.install-arrow',
+    '.demo-arrow',
+    '.block-doodle',
+    '.tape',
+    '.thesis-mark .portal-pair img',
+    '.cat-floater',
+    '.callout img',
+    '.hero-illo img',
+    '.underline-mark',
+  ];
+
+  // Author tool only: the drag-edit overlay exists to fine-tune ornament
+  // positions during development. In production it must never activate —
+  // it would hijack Ctrl+E from visitors and let them scramble the page.
+  const EDIT_MODE_AVAILABLE = ['localhost', '127.0.0.1'].includes(location.hostname);
+
+  let editMode = false;
+  let panel = null;
+  let selected = null;
+  let dragging = null;
+  let dragOffset = { x: 0, y: 0 };
+  let handles = null;
+
+  function selectorFor(el) {
+    let s = el.tagName.toLowerCase();
+    if (el.id) s += '#' + el.id;
+    const classes = [...el.classList].filter(c => c !== 'drag-edit' && c !== 'active' && c !== 'reveal' && c !== 'in');
+    if (classes.length) s += '.' + classes.slice(0, 3).join('.');
+    return s;
+  }
+
+  /* Extra identifying context so multiple .marginalia (etc.) can be
+     told apart in the panel output. Returns a string like:
+       "(in .about-section, img=handdrawn-24.svg)"
+     so the source-side edit knows which instance to update. */
+  function contextFor(el) {
+    const parts = [];
+    const section = el.closest('section, header, footer, figure, main');
+    if (section) {
+      const secClass = [...section.classList].find(c => c.endsWith('-section'))
+                    || section.className.split(' ')[0]
+                    || section.tagName.toLowerCase();
+      parts.push('in .' + secClass);
+    }
+    let imgSrc = null;
+    if (el.tagName === 'IMG') imgSrc = el.getAttribute('src');
+    else {
+      const img = el.querySelector('img');
+      if (img) imgSrc = img.getAttribute('src');
+    }
+    if (imgSrc) parts.push('img=' + imgSrc.split('/').pop());
+    return parts.length ? '(' + parts.join(', ') + ')' : '';
+  }
+
+  function updateInfo() {
+    if (!panel) return;
+    const info = panel.querySelector('#edit-info');
+    if (!selected) {
+      info.innerHTML = '<span style="opacity:.65;">click an ornament to select it</span>';
+      return;
+    }
+    const cs = getComputedStyle(selected);
+    const rotate = selected.style.rotate || cs.rotate || '0deg';
+    info.innerHTML = `
+      <div style="color:#c6ff4a;margin-bottom:2px;">${selectorFor(selected)}</div>
+      <div style="opacity:.7;margin-bottom:6px;font-size:11px;">${contextFor(selected)}</div>
+      <div>top:    ${selected.style.top    || cs.top}</div>
+      <div>left:   ${selected.style.left   || cs.left}</div>
+      <div>right:  ${selected.style.right  || cs.right}</div>
+      <div>bottom: ${selected.style.bottom || cs.bottom}</div>
+      <div>width:  ${selected.style.width  || cs.width}</div>
+      <div>rotate: ${rotate}</div>
+    `;
+  }
+
+  function makePanel() {
+    const p = document.createElement('div');
+    p.id = 'edit-panel';
+    p.innerHTML = `
+      <div><strong>EDIT MODE</strong> · drag to move · <span class="edit-key">green corners</span> resize · <span class="edit-key">red dot</span> rotate · <span class="edit-key">⌘E</span> exit · <span class="edit-key">↑↓←→</span> nudge · <span class="edit-key">[ ]</span> resize · <span class="edit-key">R</span> rotate</div>
+      <div id="edit-info"></div>
+    `;
+    document.body.appendChild(p);
+    return p;
+  }
+
+  function enableEditMode() {
+    editMode = true;
+    document.body.classList.add('edit-mode-on');
+    panel = makePanel();
+    const set = new Set();
+    DRAG_TARGETS.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => set.add(el));
+    });
+    set.forEach(el => {
+      el.classList.add('drag-edit');
+      el.addEventListener('mousedown', onDown);
+    });
+    updateInfo();
+    window.addEventListener('scroll', positionHandles, { passive: true });
+    window.addEventListener('resize', positionHandles);
+    console.log(`[edit-mode] ${set.size} ornaments draggable`);
+  }
+
+  function disableEditMode() {
+    editMode = false;
+    document.body.classList.remove('edit-mode-on');
+    if (panel) { panel.remove(); panel = null; }
+    hideHandles();
+    document.querySelectorAll('.drag-edit').forEach(el => {
+      el.classList.remove('drag-edit', 'active');
+      el.removeEventListener('mousedown', onDown);
+      delete el.dataset.editNormalized;
+    });
+    selected = null;
+  }
+
+  function selectEl(el) {
+    if (selected) selected.classList.remove('active');
+    selected = el;
+    if (selected) selected.classList.add('active');
+    updateInfo();
+    if (selected) showHandles(); else hideHandles();
+  }
+
+  function showHandles() {
+    hideHandles();
+    handles = document.createElement('div');
+    handles.id = 'edit-handles';
+    handles.innerHTML = `
+      <div class="eh nw"  data-corner="nw"></div>
+      <div class="eh ne"  data-corner="ne"></div>
+      <div class="eh sw"  data-corner="sw"></div>
+      <div class="eh se"  data-corner="se"></div>
+      <div class="eh rot" data-corner="rot"></div>
+    `;
+    document.body.appendChild(handles);
+    handles.querySelectorAll('.eh').forEach(h => {
+      h.addEventListener('mousedown', onHandleDown);
+    });
+    positionHandles();
+  }
+
+  function hideHandles() {
+    if (handles) { handles.remove(); handles = null; }
+  }
+
+  function positionHandles() {
+    if (!handles || !selected) return;
+    const r = selected.getBoundingClientRect();
+    const setH = (cls, x, y) => {
+      const h = handles.querySelector(cls);
+      if (!h) return;
+      const half = 7;
+      h.style.left = (x - half) + 'px';
+      h.style.top  = (y - half) + 'px';
+    };
+    setH('.nw',  r.left,  r.top);
+    setH('.ne',  r.right, r.top);
+    setH('.sw',  r.left,  r.bottom);
+    setH('.se',  r.right, r.bottom);
+    setH('.rot', (r.left + r.right) / 2, r.top - 30);
+  }
+
+  function onHandleDown(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!selected) return;
+    normalizePosition(selected);
+    positionHandles();
+    const corner = e.currentTarget.dataset.corner;
+    const startR = selected.getBoundingClientRect();
+    const cs = getComputedStyle(selected);
+    const startWidth = parseFloat(selected.style.width || cs.width) || startR.width;
+    const startHeight = parseFloat(cs.height) || startR.height;
+    const startRotate = parseFloat(selected.style.rotate || cs.rotate) || 0;
+    const aspect = startHeight && startWidth ? startWidth / startHeight : 1;
+    const center = {
+      x: (startR.left + startR.right) / 2,
+      y: (startR.top + startR.bottom) / 2,
+    };
+    const startMouseAngle = Math.atan2(e.clientY - center.y, e.clientX - center.x);
+
+    function move(ev) {
+      if (corner === 'rot') {
+        const a = Math.atan2(ev.clientY - center.y, ev.clientX - center.x);
+        const deg = (a - startMouseAngle) * 180 / Math.PI;
+        selected.style.rotate = (startRotate + deg) + 'deg';
+      } else {
+        // Resize from opposite corner. Take the change along the
+        // horizontal axis as the source of truth and let aspect
+        // ratio carry the height (height stays auto).
+        const opp = {
+          x: corner.includes('w') ? startR.right : startR.left,
+          y: corner.includes('n') ? startR.bottom : startR.top,
+        };
+        const dx = Math.abs(ev.clientX - opp.x);
+        const dy = Math.abs(ev.clientY - opp.y);
+        // Use whichever drag distance gives the bigger element (so
+        // dragging diagonally feels natural).
+        const newW = Math.max(dx, dy * aspect);
+        selected.style.width = Math.max(8, Math.round(newW)) + 'px';
+        selected.style.height = 'auto';
+      }
+      positionHandles();
+      updateInfo();
+    }
+    function up() {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+    }
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+  }
+
+  /* Snapshot the element's current visual position into plain
+     top/left, promote it to position:absolute if it was static
+     (e.g. a flow img like .demo-arrow), and clear any CSS
+     translate so subsequent moves/resizes don't fight a
+     centering transform. Idempotent — only runs once per element
+     per edit-mode session. */
+  function normalizePosition(el) {
+    if (el.dataset.editNormalized === '1') return;
+    const r  = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    if (cs.position === 'static') {
+      el.style.position = 'absolute';
+    }
+    const op = el.offsetParent
+      ? el.offsetParent.getBoundingClientRect()
+      : { left: 0, top: 0 };
+    el.style.left   = (r.left - op.left) + 'px';
+    el.style.top    = (r.top  - op.top)  + 'px';
+    el.style.right  = 'auto';
+    el.style.bottom = 'auto';
+    el.style.translate = 'none';
+    el.dataset.editNormalized = '1';
+  }
+
+  function onDown(e) {
+    if (!editMode) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragging = e.currentTarget;
+    selectEl(dragging);
+    normalizePosition(dragging);
+    const r = dragging.getBoundingClientRect();
+    dragOffset.x = e.clientX - r.left;
+    dragOffset.y = e.clientY - r.top;
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    const op = dragging.offsetParent
+      ? dragging.offsetParent.getBoundingClientRect()
+      : { left: 0, top: 0 };
+    const newLeft = Math.round(e.clientX - op.left - dragOffset.x);
+    const newTop  = Math.round(e.clientY - op.top  - dragOffset.y);
+    dragging.style.left   = newLeft + 'px';
+    dragging.style.top    = newTop  + 'px';
+    dragging.style.right  = 'auto';
+    dragging.style.bottom = 'auto';
+    updateInfo();
+    positionHandles();
+  }
+
+  function onUp() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    if (dragging) reparentIfMoved(dragging);
+    dragging = null;
+  }
+
+  /* If a marginalia/doodle has been dragged into a different section
+     than its current DOM parent, reparent it and recalculate top/left
+     relative to the new parent. Keeps the panel's "in .X-section"
+     context honest and keeps top/left values sane (relative to the
+     section the ornament visually lives in).
+     Elements that are inherently tied to a parent (.tape on a plate,
+     .plate-cat on the Renoir plate, the thesis portal-pair imgs) are
+     skipped — their parent IS their meaning. */
+  const SECTION_HOSTS = 'section.spread, figure.plate, header.hero, footer';
+  const NO_REPARENT   = ['.tape', '.plate-cat', '.thesis-mark img', '.install-arrow', '.install-sparkle img', '.callout img', '.underline-mark'];
+
+  function reparentIfMoved(el) {
+    if (NO_REPARENT.some(sel => el.matches(sel))) return;
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width  / 2;
+    const cy = r.top  + r.height / 2;
+    const sections = document.querySelectorAll(SECTION_HOSTS);
+    let target = null;
+    for (const s of sections) {
+      const sr = s.getBoundingClientRect();
+      if (cx >= sr.left && cx <= sr.right && cy >= sr.top && cy <= sr.bottom) {
+        target = s; break;
+      }
+    }
+    const current = el.closest(SECTION_HOSTS);
+    if (!target || target === current) return;
+    // Snapshot viewport rect, reparent, then recompute top/left so the
+    // element doesn't visually jump.
+    const oldRect = el.getBoundingClientRect();
+    target.appendChild(el);
+    const newRect = target.getBoundingClientRect();
+    el.style.left   = Math.round(oldRect.left - newRect.left) + 'px';
+    el.style.top    = Math.round(oldRect.top  - newRect.top)  + 'px';
+    el.style.right  = 'auto';
+    el.style.bottom = 'auto';
+    updateInfo();
+    positionHandles();
+    console.log('[edit-mode] reparented into', target.className);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    // Toggle edit mode — dev only. In production fall through without
+    // preventDefault so the browser keeps its native Ctrl/Cmd+E behavior.
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e') {
+      if (!EDIT_MODE_AVAILABLE) return;
+      e.preventDefault();
+      editMode ? disableEditMode() : enableEditMode();
+      return;
+    }
+    if (!editMode || !selected) return;
+    const step = e.shiftKey ? 10 : 1;
+    const cs = getComputedStyle(selected);
+    const cur = (prop) => parseFloat(selected.style[prop] || cs[prop]) || 0;
+    if (e.key === 'ArrowLeft')  { selected.style.left = (cur('left') - step) + 'px'; selected.style.right = 'auto'; e.preventDefault(); updateInfo(); }
+    if (e.key === 'ArrowRight') { selected.style.left = (cur('left') + step) + 'px'; selected.style.right = 'auto'; e.preventDefault(); updateInfo(); }
+    if (e.key === 'ArrowUp')    { selected.style.top  = (cur('top')  - step) + 'px'; selected.style.bottom = 'auto'; e.preventDefault(); updateInfo(); }
+    if (e.key === 'ArrowDown')  { selected.style.top  = (cur('top')  + step) + 'px'; selected.style.bottom = 'auto'; e.preventDefault(); updateInfo(); }
+    if (e.key === '[' || e.key === ']') {
+      const dir = e.key === ']' ? 1 : -1;
+      const amount = e.shiftKey ? 20 : 4;
+      const w = parseFloat(selected.style.width || cs.width) || 0;
+      selected.style.width = Math.max(8, w + dir * amount) + 'px';
+      selected.style.height = 'auto';
+      e.preventDefault();
+      updateInfo();
+    }
+    if (e.key.toLowerCase() === 'r') {
+      const delta = e.shiftKey ? -1 : 1;
+      const curRotate = parseFloat(selected.style.rotate || cs.rotate) || 0;
+      selected.style.rotate = (curRotate + delta) + 'deg';
+      e.preventDefault();
+      updateInfo();
+    }
+  });
+
+  // Wheel on the selected element resizes it; Shift+wheel rotates.
+  // We only intercept when the cursor is OVER the selected element,
+  // so scrolling the rest of the page still works normally.
+  document.addEventListener('wheel', (e) => {
+    if (!editMode || !selected) return;
+    const overSelected = selected === e.target || selected.contains(e.target);
+    if (!overSelected) return;
+    e.preventDefault();
+    const cs = getComputedStyle(selected);
+    if (e.shiftKey) {
+      const cur = parseFloat(selected.style.rotate || cs.rotate) || 0;
+      const delta = e.deltaY > 0 ? -2 : 2;
+      selected.style.rotate = (cur + delta) + 'deg';
+    } else {
+      const w = parseFloat(selected.style.width || cs.width) || 0;
+      const delta = e.deltaY > 0 ? -4 : 4;
+      selected.style.width = Math.max(8, w + delta) + 'px';
+      selected.style.height = 'auto';
+    }
+    updateInfo();
+  }, { passive: false });
+
+  /* Signup form JS removed — portaltext is account-less now. The install
+     window is a direct Chrome Web Store link; the /auth/* account layer
+     stays server-side for the future supporter flow. */
+</script>
+
+<script>
+  /* Thesis reveal-card — a single frosted card slides in from the right edge
+     as the section scrolls through the viewport, comes to rest centred over
+     the "open web" phrase in the headline, and fades its definition in once
+     it settles. Position maps directly to scroll. Desktop only. */
+  (function () {
+    var card = document.getElementById('owCard');
+    var sec  = document.querySelector('.thesis-sec');
+    var pin  = document.querySelector('.thesis-pin');
+    var slot = document.querySelector('.thesis-right');
+    var def  = card && card.querySelector('.ow-def');
+    var cont = card && card.closest('.thesis-rotary');
+    if (!card || !sec || !pin || !slot || !cont) return;
+
+    function easeInOut(t){ return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2; }
+    function clamp(v){ return v < 0 ? 0 : (v > 1 ? 1 : v); }
+
+    var ticking = false;
+    function frame(){
+      ticking = false;
+      if (window.innerWidth <= 900) return;
+
+      /* Progress through the pinned scroll track: 0 when the section first
+         locks to the top, 1 when the pin is about to release. The section
+         stays fixed in place across this whole window, so vertical scrolling
+         is effectively "paused" while the card animates. */
+      var pr = pin.getBoundingClientRect();
+      var scrollable = pin.offsetHeight - window.innerHeight;
+      var p = clamp(scrollable > 0 ? (-pr.top) / scrollable : 0);
+
+      /* Slide window: hold briefly so the headline reads first (p > 0.12),
+         then glide in slowly (range 0.46). After it lands (~p 0.58) the pin
+         keeps holding so the finished card + definition sit still to be read
+         before the page scrolls on. */
+      var e = easeInOut(clamp((p - 0.12) / 0.46));
+      /* Reveal the definition once the film is most of the way home. */
+      var revealed = e > 0.6;
+
+      var cr = cont.getBoundingClientRect();
+      var sr = slot.getBoundingClientRect(); /* the empty right-hand column */
+      var cw = card.offsetWidth, ch = card.offsetHeight;
+
+      /* Rest centred in the right column, beside the copy — never over it. */
+      var restLeft = (sr.left - cr.left) + sr.width / 2 - cw / 2;
+      var restTop  = (sr.top  - cr.top)  - ch / 2; /* slot collapses to the row centre line */
+      var startLeft = cr.width + 80; /* fully off the right viewport edge */
+
+      var x   = startLeft + (restLeft - startLeft) * e;
+      var rot = (1 - e) * 4;
+
+      card.style.top = restTop + 'px';
+      card.style.transform = 'translateX(' + x.toFixed(1) + 'px) rotate(' + rot.toFixed(2) + 'deg)';
+      card.style.opacity = clamp(e * 2.4).toFixed(3);
+
+      if (def) def.classList.toggle('in', revealed);
+    }
+    function onScroll(){ if (!ticking){ ticking = true; requestAnimationFrame(frame); } }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    frame();
+  })();
+</script>
+
+</body>
+</html>
