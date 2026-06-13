@@ -4,18 +4,18 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>portaltext — contextualize the open web</title>
-<meta name="description" content="AI tooltips for every link on the web. Hover anything — articles, PDFs, citations — and get a grounded summary in place, without leaving the page. Free, no account needed." />
+<meta name="description" content="portaltext is a small, open-source browser extension. Hover any link, image, or PDF for a context-aware summary. It knows where you are and what you’re about to look at, before you ever click!" />
 <link rel="canonical" href="https://portaltext.com/" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="portaltext" />
 <meta property="og:title" content="portaltext — contextualize the open web" />
-<meta property="og:description" content="AI tooltips for every link on the web. Hover anything and get a grounded summary in place. Free, no account needed." />
+<meta property="og:description" content="Hover any link, image, or PDF for a context-aware summary. It knows where you are and what you’re about to look at, before you ever click!" />
 <meta property="og:url" content="https://portaltext.com/" />
 <meta property="og:image" content="https://portaltext.com/assets/colorcatwide.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:site" content="@145k4" />
 <meta name="twitter:title" content="portaltext — contextualize the open web" />
-<meta name="twitter:description" content="AI tooltips for every link on the web. Hover anything and get a grounded summary in place. Free, no account needed." />
+<meta name="twitter:description" content="Hover any link, image, or PDF for a context-aware summary. It knows where you are and what you’re about to look at, before you ever click!" />
 <meta name="twitter:image" content="https://portaltext.com/assets/colorcatwide.png" />
 <link rel="icon" type="image/svg+xml" href="/assets/portalcatmini.svg" />
 <link rel="apple-touch-icon" sizes="128x128" href="/assets/portalcatmini128.png" />
@@ -29,6 +29,7 @@
    Tokens
    ============================================================ */
 :root {
+  --nav-h:        90px;       /* fixed-nav height; scroll offset + section clearance key off this */
   --white:        #ffffff;   /* stark white */
   --white-dim:    #f5f5f5;
   --ink:          #1c1c19;
@@ -118,7 +119,11 @@ body,
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+/* scroll-padding-top lands hash/scrollIntoView jumps below the fixed nav.
+   NOTE: do NOT put overflow-x:clip/hidden on <html> — it forces overflow-y to
+   compute to `clip`, which kills vertical scrolling. Horizontal overflow is
+   contained by `body { overflow-x:hidden }` + the per-section `.ov` clips. */
+html { scroll-behavior: smooth; scroll-padding-top: var(--nav-h); }
 body {
   margin: 0;
   background: var(--white);
@@ -130,8 +135,12 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
+  overscroll-behavior-y: contain;  /* no rubber-band coupling between pinned sections on momentum scroll */
 }
 img { display: block; max-width: 100%; }
+/* Hash/scrollIntoView jumps land below the fixed nav instead of tucking the
+   target header underneath it. */
+.sec, .install-finale, .faq-sec, .pricing-sec, .thesis-sec, #pricing, #install, #demo { scroll-margin-top: var(--nav-h); }
 button { font-family: inherit; cursor: pointer; }
 a { color: var(--ink); text-decoration: none; transition: color 160ms ease; }
 a:hover { color: var(--ink); }
@@ -227,12 +236,12 @@ a:hover { color: var(--ink); }
    sticky .hero (100vh tall) holds in place. */
 .hero-pin {
   position: relative;
-  height: 250vh;
+  height: 250dvh;  /* dvh so the iOS URL bar doesn't resize the pin mid-scroll */
 }
 .hero {
   position: sticky;
   top: 0;
-  height: 100vh;
+  height: 100dvh;
   min-height: auto;
   /* No top padding — the masthead's brand needs to sit flush at
      the viewport top so it occupies the exact same vertical slot
@@ -422,11 +431,33 @@ a:hover { color: var(--ink); }
 }
 
 @media (max-width: 900px) {
-  .hero { min-height: auto; padding: 40px 0 60px; }
-  .hero-spread { grid-template-columns: 1fr; gap: 32px; }
-  .hero-illo img { width: 90%; transform: translateX(-8%); }
-  .hero-text { padding: 0 32px; }
-  .hero-headline { font-size: clamp(48px, 11vw, 80px); }
+  /* Hero becomes a plain static stack on mobile — no scroll-pin. The desktop
+     250vh/100vh pin + scroll-driven phase cross-fade is jumpy on phones (the
+     URL bar resizes the viewport mid-scroll), and burns ~1.5 dead screens. */
+  .hero-pin { height: auto; }
+  .hero { position: static; height: auto; min-height: 0; padding: 24px 0 56px; }
+  .hero-spread { grid-template-columns: 1fr; gap: 28px; }
+  .hero-text { min-height: 0; padding: 0 24px; }
+  /* Un-stack the cross-fade phases: drop the big wordmark (already shown in the
+     masthead), and flow the headline + sub open instead of pinning them. */
+  .hero-phase { position: static; inset: auto; opacity: 1 !important; padding-right: 0; justify-content: center; text-align: center; pointer-events: auto; }
+  .hero-phase-1 { display: none; }
+  .hero-headline { font-size: clamp(30px, 8vw, 52px); text-align: center; margin-bottom: 22px; line-height: 1.06; text-wrap: balance; }
+  .hero-sub { margin: 0 auto; text-align: center; }
+  /* The hero cat carries leftover drag-edit inline geometry
+     (position:absolute; width:687px; top:-319px; left:-49px) that beats every
+     stylesheet rule and forces the layout wider than the phone. Override it with
+     !important on mobile only — desktop keeps the inline editorial placement. */
+  .hero-illo { overflow: hidden; }
+  .hero-illo img {
+    position: static !important;
+    top: auto !important; left: auto !important;
+    width: 74% !important;
+    max-width: 300px;
+    height: auto !important;
+    margin: 0 auto !important;
+    transform: none !important;
+  }
   .masthead { padding: 0 24px 16px; }
   .hero-folio, .hero-folio-right { display: none; }
 }
@@ -1003,7 +1034,7 @@ section { position: relative; }
 /* Bleed height variants — mixing these breaks the perfect-slice rhythm */
 .painting-bleed.bleed-short { height: 52vh; max-height: 560px; }
 .painting-bleed.bleed-tall  { height: 96vh; max-height: 980px; }
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .painting-bleed { height: 60vh; }
   .painting-bleed.bleed-short { height: 44vh; }
   .painting-bleed.bleed-tall  { height: 70vh; }
@@ -1363,7 +1394,7 @@ section { position: relative; }
   font-weight: 500;
   margin-bottom: 36px;
 }
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .idea { padding: 120px 0 120px; }
   .idea-portal-left  { height: 200px; left: -60px;  opacity: 0.5; }
   .idea-portal-right { height: 200px; right: -120px; opacity: 0.5; }
@@ -1500,7 +1531,7 @@ section { position: relative; }
   margin: 0;
 }
 .faq-row-a img.inline-icon { display: inline; }
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .faq-row { grid-template-columns: 1fr; gap: 16px; padding: 28px 0; }
 }
 
@@ -1563,7 +1594,7 @@ section { position: relative; }
   opacity: 0.45;
   transform: rotate(-3deg);
 }
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .footer-colophon { grid-template-columns: 1fr; gap: 32px; text-align: left; padding: 56px 24px 40px; }
   .footer-meta-col { text-align: left; }
   .footer-meta-col .stamp { margin: 14px 0 0 0; }
@@ -1981,7 +2012,7 @@ section { position: relative; }
   height: auto;
   opacity: 0.85;
 }
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .cat-transition .cat-top    { right: 6%; width: 90px; top: -84px; }
   .cat-transition .cat-bottom { right: 6%; width: 90px; }
 }
@@ -2048,7 +2079,7 @@ section { position: relative; }
   transition: translate 600ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .install-stage:hover .install-arrow { translate: -10px 0; }
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .install-arrow { display: none; }
 }
 
@@ -2989,30 +3020,49 @@ a.extlink.painting-hover::after { content: none !important; }
 /* ============================================================
    Responsive
    ============================================================ */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
+  :root { --nav-h: 64px; }
   .wrap, .wrap-tight, .wrap-wide { padding: 0 24px; }
-  .nav { padding: 16px 24px; }
-  .nav.scrolled { padding: 12px 24px; }
-  .hero { padding: 160px 0 100px; }
+  /* Smaller, blurred nav so it occludes less and softens any text passing
+     beneath it (it floats over content once revealed on scroll). */
+  .nav { padding: 10px 24px; background: rgba(255,255,255,0.85); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+  .nav.scrolled { padding: 10px 24px; }
+  .nav-brand img { height: 40px; }
+  /* Masthead is in normal flow on mobile (hero isn't pinned) — no fixed-nav
+     clearance needed, so drop the old 160px top pad. */
+  .hero { padding: 16px 0 48px; }
   .hero-wordmark img { height: 70px; }
   section { padding: 80px 0; }
   .demo-passage-frame { padding: 0 24px; }
   .demo-counter { position: static; writing-mode: horizontal-tb; margin: 0 0 16px; text-align: center; }
   .price-row-head { flex-direction: column; align-items: flex-start; gap: 8px; }
   .install { padding: 96px 0; }
-  /* Demo carousel — fall back to stacked scenes on mobile.
-     Scroll-hijack on touch is unreliable; vertical stacking
-     gives readers all four scenes without the sticky mechanic. */
+  /* The live hover demo needs a desktop — swap the whole carousel for an
+     honest "desktop only" panel rather than faking interaction on touch. */
   .demo-scroll-wrapper { height: auto; }
-  .demo-scroll-sticky  { position: static; height: auto; overflow: visible; display: block; }
-  .demo-scroll-grid    { display: block; padding: 0 24px; }
-  .demo-track-viewport { height: auto; max-height: none; }
-  .demo-track          { display: block; width: 100%; transform: none !important; }
-  .demo-scene          { flex: none; width: 100%; height: auto; padding: 40px 0; border-bottom: 1px solid var(--rule); overflow: visible; }
-  .demo-scene:last-child { border-bottom: none; }
-  .demo-scene .demo-passage { height: auto; }
-  .demo-progress       { display: none; }
+  .demo-scroll-sticky  { display: none; }
+  .demo-desktop-only   { display: block; }
   .demo-paintings      { grid-template-columns: 1fr; }
+
+  /* --- mobile tap targets (>=44px) + decorative cleanup --- */
+  .demo-arrow { display: none !important; }   /* points at a hover gesture absent on touch; also a width-forcer */
+  .theme-toggle { min-width: 44px; min-height: 44px; }
+  .nav-actions { gap: 12px; }
+  /* You can't install a browser extension on mobile — hide the nav + masthead
+     "Install" buttons. (The thesis "Add to browser" pill and the install-finale
+     button are hidden by rules placed after their base styles; the finale shows
+     an honest "open on desktop" message instead.) */
+  .nav-cta { display: none; }
+  .footer-nav a { padding: 8px 0; display: inline-block; }
+  .support-btn { min-height: 44px; display: inline-flex; align-items: center; }
+
+  /* --- display-headline floors so big type fits a 375px column --- */
+  .thesis-head { font-size: clamp(30px, 8vw, 44px); }
+  .install-finale .if-head { font-size: clamp(32px, 9vw, 52px); }
+  .sec-h { font-size: clamp(30px, 8vw, 46px); }
+  /* Keep blackletter (Pirata One) phrases breaking as a unit — it turns to
+     mush mid-word at small sizes. */
+  .sec-h .bl, .thesis-head .bl, .if-head .bl, .hero-headline .bl { white-space: nowrap; }
 }
 </style>
 
@@ -3051,7 +3101,7 @@ a.extlink.painting-hover::after { content: none !important; }
 
 /* HERO headline — 'portal' set in blackletter, chartreuse-deep. */
 .hero-headline em { font-style: normal; color: var(--ink); }
-.hero-headline .bl { color: var(--lime-deep); font-size: 1.08em; line-height: 0.9; display: inline-block; }
+.hero-headline .hero-portal { display: inline-block; height: 1.7em; width: auto; vertical-align: -0.66em; }
 
 /* Wikilinks & accents — lift to the present green. */
 .block-demo .demo-passage a.wikilink,
@@ -3183,7 +3233,7 @@ a.extlink.painting-hover::after { content: none !important; }
 .ov { position: relative; max-width: 1200px; margin: 0 auto; padding: 0 40px; }
 .ov-wide { max-width: 1320px; }
 .sec { position: relative; padding: 150px 0; }
-@media (max-width: 760px){ .sec { padding: 96px 0; } }
+@media (max-width: 900px){ .sec { padding: 96px 0; } }
 .sec-marker {
   font-family: var(--sans); font-size: 13px; font-weight: 700; letter-spacing: 0.01em;
   color: var(--lime-deep); margin-bottom: 20px;
@@ -3223,12 +3273,16 @@ a.extlink.painting-hover::after { content: none !important; }
 
 /* ---- §A opening thesis ---- */
 .thesis-sec { padding: 150px 0 160px; }
+@media (max-width: 900px) { .thesis-sec { padding: 32px 0 48px; } }
 .thesis-grid { display: grid; grid-template-columns: 1.02fr 1fr; gap: 64px; align-items: center; }
 .thesis-head { font-family: var(--display); font-weight: 800; font-size: clamp(44px, 5.2vw, 72px); line-height: 1.0; letter-spacing: -0.035em; margin: 0 0 26px; color: var(--ink); }
 .thesis-head .bl { color: var(--lime-deep); font-size: 1.05em; }
 .thesis-body { font-family: var(--serif); font-size: 19px; line-height: 1.6; color: var(--ink-soft); max-width: 460px; margin: 0 0 32px; }
 .thesis-cta { display: inline-flex; align-items: center; gap: 16px; }
 .thesis-cta .note { font-family: var(--sans); font-size: 13px; color: var(--ink-soft); }
+/* Mobile: no "Add to browser" — can't install on a phone. (After the base rule
+   so source order doesn't re-show it.) */
+@media (max-width: 900px) { .thesis-cta { display: none; } }
 /* thesis: a live demonstration, not decoration — a reading surface with
    a hovered link and the summary 'portal' opening over it. The pane IS
    the product. */
@@ -3296,7 +3350,7 @@ a.extlink.painting-hover::after { content: none !important; }
 .support-note .support-soon { font-family: var(--sans); font-size: 13px; letter-spacing: 0.01em; color: var(--muted); margin: 0; }
 .support-gif { margin: 0; text-align: center; }
 .support-gif img { width: 100%; max-width: 420px; border-radius: 12px; rotate: 2.5deg; box-shadow: 0 18px 44px rgba(40,52,24,0.16); }
-@media (max-width: 760px){ .support-row { grid-template-columns: 1fr; gap: 36px; } }
+@media (max-width: 900px){ .support-row { grid-template-columns: 1fr; gap: 36px; } }
 
 /* ---- §F faq ---- */
 .faq2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 56px; margin-top: 44px; }
@@ -3305,7 +3359,7 @@ a.extlink.painting-hover::after { content: none !important; }
 .faq2 .a { font-family: var(--serif); font-size: 16px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
 .faq2 .a a { color: var(--lime-deep); border-bottom: 1px solid rgba(111,160,27,0.45); transition: border-color 160ms ease, color 160ms ease; }
 .faq2 .a a:hover { color: var(--lime-deep); border-bottom-color: var(--lime-deep); }
-@media (max-width: 760px){ .faq2 { grid-template-columns: 1fr; } }
+@media (max-width: 900px){ .faq2 { grid-template-columns: 1fr; } }
 
 /* ---- §E/§F scroll-paused reveal: pricing + FAQ pin for ~1 viewport
    while their items stagger in driven by scroll progress, then hold
@@ -3313,7 +3367,7 @@ a.extlink.painting-hover::after { content: none !important; }
    hero/thesis/demo pin vocabulary. Desktop only — on small screens
    the items are simply shown (no pin, no hidden state). ---- */
 .pause-pin { position: relative; }
-@media (min-width: 761px) {
+@media (min-width: 901px) {
   .pause-pin { height: 270vh; }
   .pause-pin > .sec,
   .pause-pin > .install-finale {
@@ -3385,7 +3439,17 @@ a.extlink.painting-hover::after { content: none !important; }
 @keyframes sticker-settle {
   from { opacity: 0; }
 }
-@media (max-width: 760px) { .sticker { display: none; } }
+/* Decorative ornaments hidden on phones+small tablets (they carry no info and
+   their desktop px coordinates misplace / overflow on narrow screens). */
+@media (max-width: 900px) { .sticker { display: none !important; } }
+/* Defensive clip so no stray absolutely-positioned ornament can re-widen the
+   layout viewport (clip, not hidden, to preserve sticky descendants). MOBILE
+   ONLY — on desktop the marginalia stickers intentionally hang into the outer
+   margins, so clipping there crops them. On mobile the stickers are display:none
+   and body{overflow-x:hidden} backstops any other stray width. */
+@media (max-width: 900px) {
+  .ov, .install-finale, .pricing-sec, .faq-sec, .thesis-sec { overflow-x: clip; }
+}
 /* In drag-edit mode (⌘E) the stickers must be clickable so they can be
    dragged/resized/rotated; normally they're inert decoration. */
 .edit-mode-on .sticker, .sticker.drag-edit { pointer-events: auto; }
@@ -3402,6 +3466,15 @@ a.extlink.painting-hover::after { content: none !important; }
 .form-window .install-direct { text-align: center; padding: 18px 4px 6px; }
 .form-window .install-direct .install-btn { display: inline-block; }
 .form-window .install-direct .signup-helper { margin-top: 18px; }
+/* Mobile install message (in place of the Add-to-Chrome button) */
+.install-desktop-only { display: none; }
+.form-window .install-desktop-only { text-align: center; padding: 16px 8px 10px; }
+.install-desktop-only .install-desktop-head { font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: -0.02em; line-height: 1.05; color: var(--lime-ink); margin: 0 0 12px; }
+.install-desktop-only p { font-family: var(--serif); font-size: 16px; line-height: 1.5; color: var(--ink-soft); margin: 0; }
+@media (max-width: 900px) {
+  .form-window .install-direct { display: none; }
+  .install-desktop-only { display: block; }
+}
 .form-window .install-stage .install-arrow { display:none; }
 .form-window .install-btn { display:block; width:100%; box-sizing:border-box; text-align:center; background: var(--lime) !important; color: var(--lime-ink) !important; border:none !important; border-radius: 999px; padding: 16px; font-family: var(--sans); font-weight:700; font-size:16px; box-shadow: 0 14px 30px -12px rgba(111,160,27,0.6); transition: transform 160ms ease; }
 .form-window .install-btn:hover { transform: translateY(-2px); }
@@ -3508,6 +3581,28 @@ a.extlink.painting-hover::after { content: none !important; }
   width: 100vw;
   margin-left: calc(50% - 50vw);
 }
+
+/* Mobile-only "desktop only" panel (hidden on desktop, shown in place of the
+   carousel on phones — see the max-width:768px swap). */
+.demo-desktop-only { display: none; }
+.demo-desktop-only {
+  padding: 96px 28px;
+  text-align: center;
+  color: var(--lime-ink);
+}
+.demo-desktop-only .sec-marker { justify-content: center; color: var(--lime-ink); opacity: 0.78; margin: 0 0 20px; }
+.demo-desktop-only h3 {
+  font-family: var(--display); font-weight: 800;
+  font-size: clamp(40px, 13vw, 60px); line-height: 0.98;
+  letter-spacing: -0.025em; margin: 0 0 18px; color: var(--lime-ink);
+}
+.demo-desktop-only p {
+  font-family: var(--serif); font-size: 18px; line-height: 1.5;
+  max-width: 26ch; margin: 0 auto; color: var(--lime-ink);
+}
+/* Show the panel on mobile (placed after the base display:none so it wins
+   regardless of the earlier 768px block's source order). */
+@media (max-width: 900px) { .demo-desktop-only { display: block; } }
 
 /* dappled leaf-shadow on the green — the same canopy that falls across the
    rest of the page, but painted ONTO the lime stage (the opaque green would
@@ -3667,6 +3762,57 @@ a.extlink.painting-hover::after { content: none !important; }
 /* ---- footer overhaul ---- */
 .footer-colophon { border-top: 1px solid var(--rule); }
 .foot-wordmark { font-family: var(--display); font-weight: 800; font-size: 30px; letter-spacing: -0.04em; color: var(--ink); }
+
+/* ============================================================
+   MOBILE POLISH — placed LAST so these win over the base component
+   rules regardless of source order (the earlier @media(768) block
+   loses to base rules that come after it). Alignment + heading-fit.
+   ============================================================ */
+@media (max-width: 900px) {
+  /* Match the hero's ~24px side gutters everywhere (base .ov is 40px, which
+     reads as a narrower, more-indented column than the hero). */
+  .ov { padding: 0 24px; }
+  /* Single full-width column that can actually shrink. Default 1fr is
+     minmax(auto,1fr) — a long heading word (e.g. "Contextualize") sets the
+     auto-minimum and forces the column WIDER than the screen, overflowing.
+     minmax(0,1fr) lets it shrink and wrap instead. */
+  .thesis-grid { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+  /* "Contextualize" is the longest single word on the page — size the heading
+     so it fits the column without clipping the edges. */
+  .thesis-head { font-size: clamp(31px, 8.3vw, 42px); line-height: 1.05; }
+  /* Keep the other display headings from crowding their edges too. */
+  .sec-h { font-size: clamp(34px, 9vw, 48px); }
+  .install-finale .if-head { font-size: clamp(34px, 9vw, 52px); }
+
+  /* ----- Center everything on mobile (reads cleaner in a narrow column) ----- */
+  /* .ov wraps the reading-layer, support and FAQ sections — centering it
+     cascades to their eyebrows, headings, body, cards and Q&As. */
+  .ov { text-align: center; }
+  .sec-h, .thesis-head, .thesis-body, .support-note, .support-note p { text-align: center; }
+  /* Install finale (not inside .ov) */
+  .if-copy, .if-head, .if-sub { text-align: center; }
+  /* Any block with a max-width needs auto margins to actually sit centered —
+     text-align only centers the lines INSIDE the block, not the block itself.
+     !important so it wins over higher-specificity base rules (e.g.
+     .install-finale .if-sub { margin: 0 }). */
+  .thesis-body, .footer-identity-tag,
+  .install-finale .if-sub, .form-window,
+  .support-gif img, .support-note, .hero-sub {
+    margin-left: auto !important; margin-right: auto !important;
+  }
+  /* Footer */
+  .footer-colophon, .footer-identity, .footer-identity-tag, .footer-meta-col { text-align: center; }
+  .footer-nav { align-items: center; }
+  .footer-identity img, .footer-meta-col .stamp { margin-left: auto; margin-right: auto; }
+
+  /* Center the masthead + nav wordmark on the same axis as everything else;
+     the theme toggle tucks into the top-right corner (utility, not content).
+     NOTE: only .masthead gets position:relative — .nav is position:fixed and
+     must stay that way (it's already a positioning context for the toggle). */
+  .masthead { position: relative; justify-content: center; }
+  .nav { justify-content: center; }
+  .masthead-cta, .nav-actions { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); }
+}
 </style>
 </head>
 <body>
@@ -3804,7 +3950,7 @@ a.extlink.painting-hover::after { content: none !important; }
         </div>
         <div class="hero-phase hero-phase-2">
           <h1 class="hero-headline">
-            Every link <em>is a <span class="bl">portal</span></em>.
+            Every link <em>is a <img class="hero-portal" src="/assets/portal-02.svg" alt="portal" /></em>
           </h1>
         </div>
       </div>
@@ -3834,14 +3980,14 @@ a.extlink.painting-hover::after { content: none !important; }
         <div class="ow-card" id="owCard">
           <p class="ow-kicker">what we mean</p>
           <h3 class="ow-term">the open web</h3>
-          <p class="ow-def">Pages anyone can publish and anyone can read &mdash; <b>no login, no app, no gatekeeper</b> standing between you and the page. portaltext rides along on all of it.</p>
+          <p class="ow-def">We truly mean everywhere! Any language, any website, any image. portaltext is right there looking one step ahead.</p>
         </div>
       </div>
       <div class="thesis-grid">
         <div class="thesis-copy reveal reveal-from-l">
           <div class="sec-marker"><span class="num">01</span> the reading layer</div>
-          <h2 class="thesis-head">Contextualize<br />the <span class="bl">open&nbsp;web</span>.</h2>
-          <p class="thesis-body">portaltext is a small browser extension. Hover any link, image, or PDF on the internet and a short, context-aware summary appears &mdash; right there, on the page you&rsquo;re already reading.</p>
+          <h2 class="thesis-head">Contextualize<br />the open web.</h2>
+          <p class="thesis-body">portaltext is a small, open-source browser extension. Hover any link, image, or PDF for a context-aware summary. It knows where you are and what you&rsquo;re about to look at, before you ever click!</p>
           <div class="thesis-cta">
             <a class="pill-lime" href="#install">Add to browser</a>
           </div>
@@ -3856,12 +4002,20 @@ a.extlink.painting-hover::after { content: none !important; }
        slide through four scenes (Borges / 2 Tim 3 / paintings / HN).
        Left lede stays pinned. Mechanic mirrors the .hero-pin pattern. -->
   <section class="demo-scroll-wrapper block-demo" id="demo">
+    <!-- The live hover demo needs a desktop (portaltext is a hover-based
+         browser extension). On mobile we show this honest panel instead of
+         faking the interaction. -->
+    <div class="demo-desktop-only">
+      <div class="sec-marker"><span class="num">02</span> the live demo</div>
+      <h3>Desktop only.</h3>
+      <p>Come back on desktop to try out the features for yourself before installing!</p>
+    </div>
     <div class="demo-scroll-sticky">
       <div class="demo-leaves" aria-hidden="true"></div>
       <div class="demo-scroll-grid">
         <div class="demo-lede demo-lede-fixed">
           <div class="sec-marker"><span class="num">02</span> try it live</div>
-          <h3>Hover any <span class="bl">link</span>.</h3>
+          <h3>Hover any link.</h3>
           <img class="demo-arrow" src="/assets/handdrawn-27.svg" alt="" aria-hidden="true" style="position:absolute; left:334px; top:410px; width:125px; rotate:31.48deg;" />
           <div class="demo-progress" id="demoProgress" aria-hidden="true">
             <span class="demo-dot active"></span>
@@ -3978,11 +4132,11 @@ a.extlink.painting-hover::after { content: none !important; }
       <!-- bottom half (rear) of the vertical leaping cat, moved into the support (§04) section -->
       <img class="sticker" src="/assets/handdrawn-07.svg" alt="" aria-hidden="true" style="left:900px; top:-85px; width:172px; rotate:-0.87deg; --sticker-op:.5;" />
       <div class="sec-marker pause-item"><span class="num">04</span> support</div>
-      <h2 class="sec-h pause-item">Free. <span class="bl">For everyone.</span></h2>
+      <h2 class="sec-h pause-item">Free. For everyone.</h2>
       <div class="support-row">
         <article class="support-note pause-item">
-          <p>portaltext is made by one person &mdash; <a href="https://twitter.com/145k4" target="_blank" rel="noopener noreferrer">Alaska Hoffman</a>, a poet, artist, and solo developer &mdash; and the AI behind every hover costs real money to run.</p>
-          <p>There&rsquo;s no paid tier to compare against, because everything here works on the free plan: no account, no trial, no wall. But if portaltext earns a place in your everyday reading and you&rsquo;d like to chip in, it would mean the world. Supporters get unlimited access to every feature &mdash; as a thank-you, and to help cover everyone else&rsquo;s hovers.</p>
+          <p>portaltext is made by one person, <a href="https://twitter.com/145k4" target="_blank" rel="noopener noreferrer">Alaska Hoffman</a>, poet, artist, and solo dev.</p>
+          <p>In order to keep all of this stuff free and open-source, she pays out-of-pocket for all the hosting and inference being run. If you like portaltext, if it becomes a part of your everyday browsing habits, please consider helping her keep the lights on. Supporters get unlimited access to every feature with no daily limits, as a thank-you for keeping it free for everybody else.</p>
           <p class="support-cta"><a class="support-btn" href="/supporter/checkout">Become a supporter &rarr;</a></p>
           <p class="support-soon">Pay what you want &middot; one-time &middot; unlimited access, forever</p>
         </article>
@@ -4003,9 +4157,9 @@ a.extlink.painting-hover::after { content: none !important; }
       <div class="sec-marker pause-item"><span class="num">05</span> questions</div>
       <h2 class="sec-h pause-item">Good questions.</h2>
       <div class="faq2">
-        <div class="qa pause-item"><p class="q">Is it really free?</p><p class="a">Yes &mdash; every feature, no account, no trial. There&rsquo;s a generous daily allowance so the AI bill stays sane, and a supporter tier (unlimited everything) is coming for people who&rsquo;d like to help cover everyone&rsquo;s hovers.</p></div>
-        <div class="qa pause-item"><p class="q">Which browsers?</p><p class="a">Anything Chromium &mdash; Chrome, Edge, Brave, Arc, Opera. Firefox soon.</p></div>
-        <div class="qa pause-item"><p class="q">How does it work?</p><p class="a">An AI reads the page you&rsquo;re on and the page behind the link, then writes a short summary framed by both. It&rsquo;s the gel between two pages, not a generator &mdash; so it stays grounded in what&rsquo;s already there and doesn&rsquo;t make things up.</p></div>
+        <div class="qa pause-item"><p class="q">Is it really free?</p><p class="a">Yes! No account, no card, no trial. There&rsquo;s a daily limit to keep hosting costs down, but every feature is available, and that limit goes away for Supporters.</p></div>
+        <div class="qa pause-item"><p class="q">Which browsers?</p><p class="a">Anything Chromium: Chrome, Edge, Brave, Arc, Opera. Firefox soon.</p></div>
+        <div class="qa pause-item"><p class="q">How does it work?</p><p class="a">portaltext reads the page you&rsquo;re on, and the page on the other side of the link you&rsquo;re about to click on. It gives you a summary of the latter, contextualized by the former, so no information is invented or hallucinated. Think of it like a gel connecting the web together.</p></div>
         <div class="qa pause-item"><p class="q">Is my reading private?</p><p class="a">We send only the URL and a small page excerpt. No tracking, no hover history, no ads.</p></div>
         <div class="qa pause-item"><p class="q">Who made this?</p><p class="a">portaltext is made by Alaska Hoffman, a poet, artist, and solo dev. Always online <a href="https://twitter.com/145k4" target="_blank" rel="noopener noreferrer">@145k4</a>.</p></div>
       </div>
@@ -4032,8 +4186,8 @@ a.extlink.painting-hover::after { content: none !important; }
     <img class="sticker sticker--white" src="/assets/handdrawn-26.svg" alt="" aria-hidden="true" style="z-index:1; left:493px; top:227px; width:321px; rotate:8deg; --sticker-op:.2;" />
     <div class="if-inner">
       <div class="if-copy">
-        <h2 class="if-head pause-item">Add it to<br /><span class="bl">every</span> site.</h2>
-        <p class="if-sub pause-item">Free for everyone &mdash; tooltips, PDFs, citations, full-page annotation. No account, no setup; it works the second it&rsquo;s installed.</p>
+        <h2 class="if-head pause-item">Add it to<br />every site.</h2>
+        <p class="if-sub pause-item">Free for everyone. No account, no setup, no trial, it just works!</p>
       </div>
       <div class="form-window pause-item">
         <div class="install-direct">
@@ -4041,6 +4195,12 @@ a.extlink.painting-hover::after { content: none !important; }
             <a href="https://chromewebstore.google.com/detail/portaltext/hlhjiehpelkfhdcihpdpkmgodapjlfcb" target="_blank" rel="noopener noreferrer" class="install-btn">Add to Chrome →</a>
           </div>
           <p class="signup-helper">Chromium browsers &mdash; Chrome, Edge, Brave, Arc, Opera. Firefox soon.</p>
+        </div>
+        <!-- Mobile: no install button (extensions can't be installed on a
+             phone) — an honest "open on desktop" message takes its place. -->
+        <div class="install-desktop-only">
+          <p class="install-desktop-head">Install on your computer.</p>
+          <p>portaltext is a browser extension — open this page on desktop to add it to Chrome, Edge, Brave, Arc, or Opera.</p>
         </div>
       </div>
     </div>
@@ -4066,7 +4226,6 @@ a.extlink.painting-hover::after { content: none !important; }
     </nav>
     <div class="footer-meta-col">
       <div>made with <img src="/assets/handdrawn-26.svg" alt="love" /> in 2026</div>
-      <div>Set in LINE Seed JP, Pirata One &amp; IBM Plex Mono</div>
       <img src="/assets/handdrawn-35.svg" alt="prtltxt" class="stamp" />
     </div>
   </div>
@@ -4136,6 +4295,16 @@ a.extlink.painting-hover::after { content: none !important; }
   let lastScroll = 0;
   function onScroll() {
     const y = window.scrollY;
+    // Mobile: the hero isn't pinned, so the pin-bottom math below is wrong
+    // (the short hero makes it read "already past"). Reveal the fixed nav by a
+    // simple scroll threshold once the in-flow masthead has scrolled away.
+    if (window.innerWidth <= 900) {
+      const op = y > 120 ? 1 : 0;
+      nav.style.opacity = op;
+      nav.style.pointerEvents = op ? 'auto' : 'none';
+      lastScroll = y;
+      return;
+    }
     // Reveal the fixed nav only after the hero-pin has fully
     // scrolled past — until then, the masthead inside the hero is
     // visible and the nav would just double up on top of it.
@@ -4173,6 +4342,9 @@ a.extlink.painting-hover::after { content: none !important; }
   const heroPhases = document.querySelectorAll('.hero-phase');
   function updateHeroPhases() {
     if (!heroPin || heroPhases.length < 2) return;
+    // Mobile: the hero is a static stack (no pin), the headline is pinned open
+    // via CSS — don't drive the cross-fade or it fights the static layout.
+    if (window.innerWidth <= 900) { return; }
     const r = heroPin.getBoundingClientRect();
     const totalScroll = r.height - window.innerHeight;
     if (totalScroll <= 0) return;

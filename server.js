@@ -3549,8 +3549,8 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // Static images / icons living next to index.html
-    if (req.method === 'GET' && /^\/(?:assets\/(?:[\w-]+\/)?)?[\w.-]+\.(png|jpg|jpeg|gif|svg|ico|webp)$/i.test(url.pathname)) {
+    // Static images / icons / demo videos living next to index.html
+    if (req.method === 'GET' && /^\/(?:assets\/(?:[\w-]+\/)?)?[\w.-]+\.(png|jpg|jpeg|gif|svg|ico|webp|mp4|webm)$/i.test(url.pathname)) {
       const filename = url.pathname.slice(1);
       try {
         const data = await fs.readFile(path.join(__dirname, filename));
@@ -3558,7 +3558,8 @@ const server = http.createServer(async (req, res) => {
         const types = {
           png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
           gif: 'image/gif', svg: 'image/svg+xml',
-          ico: 'image/x-icon', webp: 'image/webp'
+          ico: 'image/x-icon', webp: 'image/webp',
+          mp4: 'video/mp4', webm: 'video/webm'
         };
         res.writeHead(200, {
           'Content-Type': types[ext] || 'application/octet-stream',

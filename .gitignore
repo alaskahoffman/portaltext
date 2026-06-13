@@ -20,3 +20,6 @@ portaltext.db-shm
 # Throwaway prototype scaffold — the real extension lives in extension/
 extension-code/
 store-assets/
+
+# Welcome-page demo source recordings (converted to mp4; keep local, do not commit)
+assets/welcomedemos/*.mov

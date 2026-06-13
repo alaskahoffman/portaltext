@@ -301,20 +301,14 @@ a { color: var(--ink); text-decoration: none; }
 /* Generic GIF/screenshot placeholder used in each capability — user
    will replace the data-src empty <div> with a real asset later. */
 .media-frame {
+  display: block;
   width: 100%;
-  aspect-ratio: 16 / 9;
-  border: 2px dashed var(--rule-strong);
+  height: auto;
   border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  text-align: center;
-  padding: 14px;
   margin-top: 16px;
+  background: var(--white-dim);
+  border: 1px solid var(--rule);
+  box-shadow: 0 10px 34px -16px rgba(40, 60, 10, 0.4);
 }
 
 /* ==== footer ==== */
@@ -393,8 +387,8 @@ a { color: var(--ink); text-decoration: none; }
 <header class="hero">
   <div class="wrap">
     <div class="hero-marker">welcome</div>
-    <h1>You're in.<br />Hover <span class="bl">anything</span>.</h1>
-    <p>portaltext is now active in your browser. The sections below show every way the extension can surface context for what you're reading. Try each one right here on this page — your tooltips light up as you hover.</p>
+    <h1>Welcome to portaltext!</h1>
+    <p>portaltext is now active, the section below serves as a little suite to show all the ways portaltext can be used, all you have to do is hover!</p>
   </div>
 </header>
 
@@ -406,14 +400,14 @@ a { color: var(--ink); text-decoration: none; }
       <div class="cap-grid">
         <div class="cap-side">
           <h2>Hover any link.</h2>
-          <p class="cap-desc">Move your cursor over a link, wait a beat, and a summary opens — written by an AI that reads the linked page <em>and</em> the page you're already on, then stitches them together.</p>
+          <p class="cap-desc">Any link on any site, just hover your cursor for a second and get a portal to the other side. Keep on hovering to go deeper.</p>
           <span class="cap-instruction">try: hover a name below</span>
         </div>
         <div class="cap-main">
           <div class="demo-card">
             <p><a href="https://en.wikipedia.org/wiki/Jorge_Luis_Borges">Jorge Luis Borges</a> spent his last decade nearly blind, dictating his stories from memory. He once said reading is more important than writing — a sentiment <a href="https://en.wikipedia.org/wiki/Italo_Calvino">Italo Calvino</a> echoed in his own essays. Both belong to a strange lineage that runs through <a href="https://en.wikipedia.org/wiki/Hypertext_fiction">hypertext fiction</a>, books that fork at every junction, decades before the web.</p>
           </div>
-          <div class="media-frame">[ gif placeholder — hover a link, summary appears ]</div>
+          <video class="media-frame" src="/assets/welcomedemos/demo-1.mp4" autoplay loop muted playsinline preload="metadata" aria-hidden="true"></video>
         </div>
       </div>
     </div>
@@ -425,14 +419,14 @@ a { color: var(--ink); text-decoration: none; }
       <div class="cap-grid">
         <div class="cap-side">
           <h2>Hover any image.</h2>
-          <p class="cap-desc">Same gesture, different content. Hover an image and you get a short caption-summary — the work, the artist, the period, what it means.</p>
+          <p class="cap-desc">Same thing here, just starting from an image.</p>
           <span class="cap-instruction">try: hover the painting</span>
         </div>
         <div class="cap-main">
           <a class="demo-image" href="/assets/paintings/woman_with_a_cat_1950.12.1.jpg">
             <img src="/assets/paintings/woman_with_a_cat_1950.12.1.jpg" alt="Renoir, Woman with a Cat" />
           </a>
-          <div class="media-frame">[ gif placeholder — hover an image, caption appears ]</div>
+          <video class="media-frame" src="/assets/welcomedemos/demo-2.mp4" autoplay loop muted playsinline preload="metadata" aria-hidden="true"></video>
         </div>
       </div>
     </div>
@@ -444,14 +438,14 @@ a { color: var(--ink); text-decoration: none; }
       <div class="cap-grid">
         <div class="cap-side">
           <h2>Hover a <span class="bl">PDF</span>.</h2>
-          <p class="cap-desc">PDFs and other heavyweight pages need a little more help — portaltext reads what it can and surfaces a summary the same way it would for a regular page. A bigger lift, so it draws a little more from your daily allowance.</p>
+          <p class="cap-desc">Getting a little heavier, portaltext reads as much of the real pdf as it can and summarizes it the same way as anything else. Eats a bit more of your daily usage than normal hovers.</p>
           <span class="cap-instruction">try: hover the PDF link</span>
         </div>
         <div class="cap-main">
           <div class="demo-card">
             <p>The classic example: <a href="https://arxiv.org/pdf/1706.03762">Attention Is All You Need (PDF, arXiv 1706.03762)</a> — the 2017 paper that introduced the Transformer architecture. Hover it and the tooltip reads the PDF directly.</p>
           </div>
-          <div class="media-frame">[ gif placeholder — hover a PDF link, tooltip reads it ]</div>
+          <video class="media-frame" src="/assets/welcomedemos/demo-3.mp4" autoplay loop muted playsinline preload="metadata" aria-hidden="true"></video>
         </div>
       </div>
     </div>
@@ -463,14 +457,14 @@ a { color: var(--ink); text-decoration: none; }
       <div class="cap-grid">
         <div class="cap-side">
           <h2>Citations, auto-detected.</h2>
-          <p class="cap-desc">arXiv IDs, DOIs, PMIDs — portaltext recognizes academic citation patterns even when they're not wrapped in a link, and turns each one into a hoverable portal to the paper itself.</p>
+          <p class="cap-desc">arXiv IDs, DOIs, PMIDs, and more soon! portaltext automatically recognizes these even when they're not links, and makes them hoverable for you.</p>
           <span class="cap-instruction">try: hover any identifier</span>
         </div>
         <div class="cap-main">
           <div class="demo-card">
             <p>The Transformer paper lives at <a href="https://arxiv.org/abs/1706.03762">arXiv:1706.03762</a>, and its 2024 follow-up at <a href="https://doi.org/10.48550/arXiv.2401.04088">DOI:10.48550/arXiv.2401.04088</a>. For biomedical work, try <a href="https://pubmed.ncbi.nlm.nih.gov/31735529/">PMID:31735529</a> — a study on nutritional psychiatry.</p>
           </div>
-          <div class="media-frame">[ gif placeholder — citation auto-detection ]</div>
+          <video class="media-frame" src="/assets/welcomedemos/demo-4.mp4" autoplay loop muted playsinline preload="metadata" aria-hidden="true"></video>
         </div>
       </div>
     </div>
@@ -489,7 +483,7 @@ a { color: var(--ink); text-decoration: none; }
           <div class="demo-card">
             <p>Read about <a href="https://es.wikipedia.org/wiki/Jorge_Luis_Borges">Borges en español</a>, <a href="https://ja.wikipedia.org/wiki/%E5%AE%AE%E5%B4%8E%E9%A7%BF">宮崎駿 in Japanese</a>, or <a href="https://de.wikipedia.org/wiki/Walter_Benjamin">Walter Benjamin auf deutsch</a> — set your tooltip language and the summaries arrive in it.</p>
           </div>
-          <div class="media-frame">[ gif placeholder — language switch in popup ]</div>
+          <video class="media-frame" src="/assets/welcomedemos/demo-5.mp4" autoplay loop muted playsinline preload="metadata" aria-hidden="true"></video>
         </div>
       </div>
     </div>
@@ -501,14 +495,14 @@ a { color: var(--ink); text-decoration: none; }
       <div class="cap-grid">
         <div class="cap-side">
           <h2>Make <span class="bl">anything</span> a portal.</h2>
-          <p class="cap-desc">No link? Make one. Select any text on any page, right-click, and choose <em>"Make hoverable with portaltext"</em>. The selection becomes a portal you can hover for context — even on text that wasn't originally linked.</p>
-          <span class="cap-instruction">try: select a phrase below → right-click → "Make hoverable"</span>
+          <p class="cap-desc">No link? Make one. Select any text on any page, then mouse-over the little question mark. The selection becomes a portal you can hover for context.</p>
+          <span class="cap-instruction">try: select a phrase below, then mouse-over the question mark — or right-click → "Make hoverable"</span>
         </div>
         <div class="cap-main">
           <div class="highlight-passage">
             <p>The longest river in the world, the Nile, runs north — a curiosity that puzzled travelers for centuries. Try selecting <em>"the Nile"</em>, or any phrase that catches your eye in this paragraph, right-click it, and turn it into a portal. The tooltip will arrive with the context, even without a link.</p>
           </div>
-          <div class="media-frame">[ gif placeholder — text selection → right-click → make hoverable ]</div>
+          <video class="media-frame" src="/assets/welcomedemos/demo-6.mp4" autoplay loop muted playsinline preload="metadata" aria-hidden="true"></video>
         </div>
       </div>
     </div>
@@ -520,11 +514,11 @@ a { color: var(--ink); text-decoration: none; }
       <div class="cap-grid">
         <div class="cap-side">
           <h2>Annotate this page.</h2>
-          <p class="cap-desc">Don't want to hunt for terms? Click <em>"Annotate this page"</em> in the popup and portaltext scans the whole article, wrapping every interesting term in a hoverable portal automatically. One click, a whole page of portals — it draws a little more from your daily allowance.</p>
+          <p class="cap-desc">Don't want to hunt for terms? Click <em>"Annotate this page"</em> in the popup and portaltext scans the whole article, wrapping every interesting term in a hoverable portal automatically. One click, a whole page of portals. It draws a little more from your daily allowance.</p>
           <span class="cap-instruction">try: open the popup → Annotate this page</span>
         </div>
         <div class="cap-main">
-          <div class="media-frame">[ gif placeholder — annotate this page in action ]</div>
+          <video class="media-frame" src="/assets/welcomedemos/demo-7.mp4" autoplay loop muted playsinline preload="metadata" aria-hidden="true"></video>
         </div>
       </div>
     </div>
@@ -533,7 +527,7 @@ a { color: var(--ink); text-decoration: none; }
 </main>
 
 <footer class="foot wrap-wide">
-  <span>You're all set. Go read something.</span>
+  <span>That&rsquo;s everything! Go out and try portals on your favorite website.</span>
   <span><a href="/">portaltext.com</a></span>
 </footer>
 
