@@ -262,6 +262,30 @@
     }
     .install-id:hover { color: var(--ink); border-bottom-color: var(--ink); }
 
+    /* Redeem-code row stacks label over the input form. */
+    .settings-row--stack { flex-direction: column; align-items: stretch; gap: 8px; }
+    .redeem-form { display: flex; gap: 6px; }
+    .redeem-input {
+      flex: 1; min-width: 0; padding: 7px 9px;
+      font-family: var(--font-mono, ui-monospace, monospace); font-size: 12px;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--ink); background: var(--paper);
+      border: 1px solid var(--rule-strong); border-radius: 6px;
+    }
+    .redeem-input:focus { outline: none; border-color: var(--avocado); }
+    .redeem-input::placeholder { text-transform: none; letter-spacing: normal; color: var(--muted); }
+    .redeem-btn {
+      padding: 7px 12px; font-family: var(--font-sans); font-size: 11px;
+      font-weight: 700; letter-spacing: 0.04em; color: var(--paper);
+      background: var(--ink); border: 1px solid var(--ink); border-radius: 6px; cursor: pointer;
+      transition: background-color 160ms ease, border-color 160ms ease;
+    }
+    .redeem-btn:hover:not([disabled]) { background: var(--avocado); border-color: var(--avocado); }
+    .redeem-btn[disabled] { opacity: 0.55; cursor: progress; }
+    .redeem-msg { font-size: 11px; line-height: 1.4; }
+    .redeem-msg.ok { color: var(--avocado); font-weight: 700; }
+    .redeem-msg.err { color: #c33; }
+
     /* Subview pattern — used by saves now, future settings later. Each
        subview has a head (back link + title) and its own content area. */
     .subview-head {
@@ -589,7 +613,7 @@
         </div>
       </div>
       <div class="auth-actions">
-        <button class="auth-upgrade" id="auth-upgrade" type="button" hidden>Upgrade to Plus →</button>
+        <button class="auth-upgrade" id="auth-support" type="button" hidden>Support portaltext ♥</button>
       </div>
     </div>
 
@@ -671,6 +695,17 @@
         <span class="settings-row-hint">Your anonymous identity. Click to copy — needed for support requests and supporter upgrades.</span>
       </div>
       <button class="install-id" id="installIdEl" type="button" title="Click to copy">…</button>
+    </div>
+    <div class="settings-row settings-row--stack">
+      <div class="settings-row-label">
+        Redeem supporter code
+        <span class="settings-row-hint">Supported portaltext? Paste your code to unlock unlimited access on this browser.</span>
+      </div>
+      <form class="redeem-form" id="redeemForm">
+        <input class="redeem-input" id="redeemInput" type="text" placeholder="PT-XXXX-XXXX" autocomplete="off" spellcheck="false" />
+        <button class="redeem-btn" id="redeemBtn" type="submit">Redeem</button>
+      </form>
+      <div class="redeem-msg" id="redeemMsg" hidden></div>
     </div>
   </section>
 

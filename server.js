@@ -2773,6 +2773,22 @@ authDb.exec(`
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   );
   CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+
+  -- Supporter claim codes. One row per completed Stripe checkout (keyed by
+  -- the session id for idempotency). The code is the durable supporter
+  -- credential: a donor pastes it into the popup to upgrade an install, and
+  -- can re-paste it after a reinstall or on another device — up to
+  -- max_redemptions distinct upgrades, which bounds a publicly-shared code.
+  CREATE TABLE IF NOT EXISTS supporter_codes (
+    code TEXT PRIMARY KEY,
+    stripe_session_id TEXT UNIQUE,
+    amount_cents INTEGER,
+    currency TEXT,
+    created_at INTEGER NOT NULL,
+    redemptions INTEGER NOT NULL DEFAULT 0,
+    max_redemptions INTEGER NOT NULL DEFAULT 5
+  );
+  CREATE INDEX IF NOT EXISTS idx_supporter_session ON supporter_codes(stripe_session_id);
 `);
 
 // Migration: rolling-bucket quota fields. Wrapped in try/catch so it's safe
@@ -2857,6 +2873,12 @@ const userStmts = {
 const sessionStmts = {
   create: authDb.prepare('INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)'),
   find: authDb.prepare('SELECT * FROM sessions WHERE token = ? AND expires_at > ?'),
+};
+const supporterStmts = {
+  insert: authDb.prepare('INSERT OR IGNORE INTO supporter_codes (code, stripe_session_id, amount_cents, currency, created_at, max_redemptions) VALUES (?, ?, ?, ?, ?, ?)'),
+  findByCode: authDb.prepare('SELECT * FROM supporter_codes WHERE code = ?'),
+  findBySession: authDb.prepare('SELECT * FROM supporter_codes WHERE stripe_session_id = ?'),
+  bumpRedemptions: authDb.prepare('UPDATE supporter_codes SET redemptions = redemptions + 1 WHERE code = ?'),
 };
 
 function publicUserFields(u) {
@@ -3177,6 +3199,165 @@ async function handleAuthAnon(req, res) {
   return sendJson(res, 201, { token, user: publicUserFields(user), expires_at: now + ANON_SESSION_TTL_MS });
 }
 
+// ---------- Supporter tier (Stripe one-time donation → lifetime unlimited) ----------
+// portaltext stays free for everyone; a one-time pay-what-you-want donation
+// flips an install to the `supporter` tier (unlimited, breaker-exempt) as a
+// thank-you. Account-less, so it hangs off the install id:
+//   1. Popup opens /supporter/checkout?install=<id> → 302 to the Stripe
+//      Payment Link with client_reference_id=<id>.
+//   2. Stripe fires checkout.session.completed → /stripe/webhook creates a
+//      durable claim code and (if the install id rode along) upgrades it now.
+//   3. Stripe redirects to /supporter/thanks?session_id=… which shows the
+//      code so the donor can re-redeem after a reinstall / on another device.
+//   4. Popup's "redeem code" field → /supporter/redeem upgrades the install.
+// No new dependency: webhook signatures are verified with a hand-rolled HMAC,
+// and the one Stripe API call (session retrieve) is a plain fetch.
+const STRIPE_SECRET_KEY   = process.env.STRIPE_SECRET_KEY || '';
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+const STRIPE_PAYMENT_LINK = process.env.STRIPE_PAYMENT_LINK || '';
+const SUPPORTER_CODE_MAX_REDEMPTIONS = Number(process.env.SUPPORTER_CODE_MAX_REDEMPTIONS || 5);
+
+// Human-friendly claim code: PT-XXXX-XXXX from a Crockford-ish base32 alphabet
+// (no 0/O/1/I/L/U to avoid transcription errors). ~50 bits of entropy.
+function generateClaimCode() {
+  const alphabet = '23456789ABCDEFGHJKMNPQRSTVWXYZ';
+  const bytes = crypto.randomBytes(10);
+  let out = '';
+  for (let i = 0; i < 8; i++) out += alphabet[bytes[i] % alphabet.length];
+  return `PT-${out.slice(0, 4)}-${out.slice(4)}`;
+}
+
+// Verify a Stripe webhook signature without the SDK. The header looks like
+// "t=<unix>,v1=<hex>,..."; the signed payload is `${t}.${rawBody}` HMAC'd
+// with the endpoint secret. Returns the parsed event or null.
+function verifyStripeWebhook(rawBody, sigHeader) {
+  if (!STRIPE_WEBHOOK_SECRET || !sigHeader) return null;
+  const parts = Object.fromEntries(
+    sigHeader.split(',').map(kv => kv.split('=').map(s => s.trim()))
+  );
+  const t = parts.t, v1 = parts.v1;
+  if (!t || !v1) return null;
+  // Reject stale signatures (replay) — 5 minute tolerance.
+  if (Math.abs(Date.now() / 1000 - Number(t)) > 300) return null;
+  const expected = crypto.createHmac('sha256', STRIPE_WEBHOOK_SECRET)
+    .update(`${t}.${rawBody}`, 'utf8').digest('hex');
+  const a = Buffer.from(expected, 'hex'), b = Buffer.from(v1, 'hex');
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  try { return JSON.parse(rawBody); } catch { return null; }
+}
+
+async function stripeSessionRetrieve(sessionId) {
+  if (!STRIPE_SECRET_KEY) return null;
+  const resp = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, {
+    headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}` },
+    signal: AbortSignal.timeout(10_000),
+  }).catch(() => null);
+  if (!resp || !resp.ok) return null;
+  return resp.json().catch(() => null);
+}
+
+function upgradeInstallToSupporter(userId) {
+  const u = userStmts.findById.get(userId);
+  if (!u) return false;
+  if (u.plan_tier === 'supporter' || u.plan_tier === 'beta') return false; // already unlimited — no-op, don't count
+  authDb.prepare("UPDATE users SET plan_tier = 'supporter' WHERE id = ?").run(userId);
+  console.log('[supporter] upgraded install', userId);
+  return true;
+}
+
+// Idempotent on the Stripe session id: creates the claim code if absent,
+// returns the existing row otherwise. Auto-upgrades client_reference_id when
+// present. Shared by the webhook and the thanks-page lookup so either path
+// alone is sufficient (the redirect can beat the webhook).
+function recordCheckoutSession(session) {
+  if (!session || session.payment_status !== 'paid') return null;
+  const existing = supporterStmts.findBySession.get(session.id);
+  let row = existing;
+  if (!row) {
+    const code = generateClaimCode();
+    supporterStmts.insert.run(
+      code, session.id, session.amount_total ?? null,
+      session.currency ?? null, Date.now(), SUPPORTER_CODE_MAX_REDEMPTIONS
+    );
+    row = supporterStmts.findBySession.get(session.id);
+  }
+  // Auto-upgrade the install that initiated checkout (if any), counting it
+  // against the code's redemption budget like any other redemption.
+  const installId = session.client_reference_id;
+  if (installId && row && row.redemptions < row.max_redemptions) {
+    if (upgradeInstallToSupporter(installId)) supporterStmts.bumpRedemptions.run(row.code);
+  }
+  return row;
+}
+
+async function handleStripeWebhook(req, res) {
+  const raw = await readBody(req);
+  const event = verifyStripeWebhook(raw, req.headers['stripe-signature']);
+  if (!event) return sendJson(res, 400, { error: 'Invalid signature' });
+  if (event.type === 'checkout.session.completed') {
+    try { recordCheckoutSession(event.data.object); }
+    catch (e) { console.error('[supporter] webhook record failed:', e.message); }
+  }
+  // Always 200 so Stripe doesn't retry on unhandled event types.
+  return sendJson(res, 200, { received: true });
+}
+
+// 302 to the Stripe Payment Link, threading the install id through as
+// client_reference_id so the webhook can auto-upgrade the right install.
+function handleSupporterCheckout(req, res, url) {
+  if (!STRIPE_PAYMENT_LINK) return sendJson(res, 503, { error: 'Supporting is not configured yet.' });
+  const install = (url.searchParams.get('install') || '').trim();
+  let target = STRIPE_PAYMENT_LINK;
+  if (/^[0-9a-f-]{16,40}$/i.test(install)) {
+    target += (target.includes('?') ? '&' : '?') + 'client_reference_id=' + encodeURIComponent(install);
+  }
+  res.writeHead(302, { Location: target });
+  res.end();
+}
+
+// Thanks page fetches this to display the code. Looks it up by session id;
+// if the webhook hasn't landed yet, retrieves the session from Stripe and
+// creates the code on the spot (both paths idempotent).
+async function handleSupporterCode(req, res, url) {
+  const sessionId = (url.searchParams.get('session_id') || '').trim();
+  if (!sessionId) return sendJson(res, 400, { error: 'Missing session_id' });
+  let row = supporterStmts.findBySession.get(sessionId);
+  if (!row) {
+    const session = await stripeSessionRetrieve(sessionId);
+    if (!session) return sendJson(res, 404, { error: 'Payment not found yet — refresh in a moment.' });
+    try { row = recordCheckoutSession(session); }
+    catch (e) { console.error('[supporter] code create failed:', e.message); }
+  }
+  if (!row) return sendJson(res, 404, { error: 'Payment not completed.' });
+  return sendJson(res, 200, { code: row.code });
+}
+
+async function handleSupporterRedeem(req, res) {
+  const user = authenticateRequest(req);
+  if (!user) return sendJson(res, 401, { error: 'Install portaltext first.' });
+  let parsed;
+  try { parsed = JSON.parse(await readBody(req)); }
+  catch (err) {
+    if (err?.statusCode === 413) return sendJson(res, 413, { error: 'Body too large' });
+    return sendJson(res, 400, { error: 'Bad JSON' });
+  }
+  const code = String(parsed.code || '').trim().toUpperCase();
+  if (!code) return sendJson(res, 400, { error: 'Enter a code.' });
+  const row = supporterStmts.findByCode.get(code);
+  if (!row) return sendJson(res, 404, { error: "That code isn't valid.", reason: 'invalid_code' });
+  // Already-unlimited installs redeem idempotently (a double-click or a
+  // re-redeem of the same code on the same install costs no budget).
+  if (user.plan_tier === 'supporter' || user.plan_tier === 'beta') {
+    return sendJson(res, 200, { ok: true, user: publicUserFields(user) });
+  }
+  if (row.redemptions >= row.max_redemptions) {
+    return sendJson(res, 409, { error: 'This code has been used its maximum number of times.', reason: 'code_exhausted' });
+  }
+  if (upgradeInstallToSupporter(user.id)) supporterStmts.bumpRedemptions.run(row.code);
+  const fresh = userStmts.findById.get(user.id);
+  return sendJson(res, 200, { ok: true, user: publicUserFields(fresh) });
+}
+
 // ---------- Claude inference rate limiter (per-IP token bucket) ----------
 // Generous burst window (50 tokens) so a user skimming a page can hover many
 // links in seconds without hitting a wall. Slow refill (1 token / 6s = 10/min
@@ -3328,6 +3509,12 @@ const server = http.createServer(async (req, res) => {
       res.end(html);
       return;
     }
+    if (req.method === 'GET' && (url.pathname === '/supporter/thanks' || url.pathname === '/supporter/thanks.html')) {
+      const html = await fs.readFile(path.join(__dirname, 'supporter-thanks.html'));
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(html);
+      return;
+    }
     // The standalone runtime — drop-in `<script>` for any host page.
     if (req.method === 'GET' && url.pathname === '/portaltext.js') {
       try {
@@ -3395,6 +3582,22 @@ const server = http.createServer(async (req, res) => {
       const rate = consumeRateToken(clientIp(req));
       if (!rate.ok) return sendRateLimited(res, rate.retryAfter);
       return handleAuthAnon(req, res);
+    }
+
+    // ---- Supporter tier (Stripe) ----
+    if (req.method === 'POST' && url.pathname === '/stripe/webhook') {
+      return handleStripeWebhook(req, res);
+    }
+    if (req.method === 'GET' && url.pathname === '/supporter/checkout') {
+      return handleSupporterCheckout(req, res, url);
+    }
+    if (req.method === 'GET' && url.pathname === '/supporter/code') {
+      return handleSupporterCode(req, res, url);
+    }
+    if (req.method === 'POST' && url.pathname === '/supporter/redeem') {
+      const rate = consumeRateToken(clientIp(req));
+      if (!rate.ok) return sendRateLimited(res, rate.retryAfter);
+      return handleSupporterRedeem(req, res);
     }
 
     if (req.method === 'GET' && url.pathname === '/etymology') {

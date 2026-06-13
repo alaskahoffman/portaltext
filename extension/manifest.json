@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "portaltext",
   "version": "0.3.0",
-  "description": "AI tooltips for every link. Hover anything \u2014 articles, PDFs, citations \u2014 for a context-aware summary. Free, no account needed.",
+  "description": "Every link is a portal. Hover anything, articles, images, pdfs, and get a context-aware summary on demand. Free, no account needed.",
   "action": {
     "default_popup": "popup.html",
     "default_title": "portaltext",

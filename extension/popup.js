@@ -22,7 +22,6 @@ const AUTH_USER_KEY = 'authUser';      // cached publicUserFields blob; refreshe
 // test against a local server (keep background.js's API_BASE in sync).
 const API_BASE = 'https://portaltext.com';
 const AUTH_BASE = `${API_BASE}/auth`;
-const UPGRADE_URL = `${API_BASE}/#pricing`;
 
 const toggleEl = document.getElementById('toggle');
 const domainEl = document.getElementById('domain');
@@ -102,8 +101,12 @@ const authEmailDisplayEl = document.getElementById('auth-email-display');
 const authPlanDisplayEl = document.getElementById('auth-plan-display');
 const authUsageDisplayEl = document.getElementById('auth-usage-display');
 const authUsageFillEl = document.getElementById('auth-usage-fill');
-const authUpgradeEl = document.getElementById('auth-upgrade');
+const authSupportEl = document.getElementById('auth-support');
 const installIdEl = document.getElementById('installIdEl');
+const redeemFormEl = document.getElementById('redeemForm');
+const redeemInputEl = document.getElementById('redeemInput');
+const redeemBtnEl = document.getElementById('redeemBtn');
+const redeemMsgEl = document.getElementById('redeemMsg');
 
 function hostnameOf(url) {
   try { return new URL(url).hostname; } catch { return null; }
@@ -275,9 +278,9 @@ function renderSignedIn(user) {
       : 0;
     authUsageFillEl.style.strokeDashoffset = (CIRCUMFERENCE * (1 - usedFraction)).toFixed(2);
   }
-  // Upgrade button hidden for now — the $7 Plus pitch is retired; it comes
-  // back as the supporter flow once the Stripe link + claim code ship.
-  if (authUpgradeEl) authUpgradeEl.hidden = true;
+  // Support button shows for non-unlimited installs; supporters/beta hide it.
+  const isUnlimited = user.plan_tier === 'supporter' || user.plan_tier === 'beta';
+  if (authSupportEl) authSupportEl.hidden = isUnlimited;
   // Cache the tier so the annotate-button visibility (which depends on both
   // plan and per-domain enable state) can update without re-fetching /me.
   cachedUserTier = user.plan_tier || 'free';
@@ -366,8 +369,13 @@ async function initAuth() {
     }
   }
 
-  authUpgradeEl?.addEventListener('click', () => {
-    chrome.tabs.create({ url: UPGRADE_URL });
+  // Support → server checkout redirect, threading the install id so the
+  // webhook auto-upgrades this browser on successful payment.
+  authSupportEl?.addEventListener('click', async () => {
+    const { [AUTH_USER_KEY]: user = null } = await chrome.storage.local.get(AUTH_USER_KEY);
+    const id = user?.id || '';
+    const url = `${API_BASE}/supporter/checkout` + (id ? `?install=${encodeURIComponent(id)}` : '');
+    chrome.tabs.create({ url });
   });
 
 }
@@ -486,6 +494,44 @@ async function init() {
         installIdEl.textContent = 'copied!';
         setTimeout(() => { installIdEl.textContent = orig; }, 1200);
       } catch { /* clipboard unavailable — the id is still visible to copy by hand */ }
+    });
+  }
+  if (redeemFormEl) {
+    redeemFormEl.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const code = redeemInputEl.value.trim();
+      if (!code) return;
+      const showMsg = (text, ok) => {
+        redeemMsgEl.textContent = text;
+        redeemMsgEl.className = 'redeem-msg ' + (ok ? 'ok' : 'err');
+        redeemMsgEl.hidden = false;
+      };
+      redeemBtnEl.disabled = true;
+      const orig = redeemBtnEl.textContent;
+      redeemBtnEl.textContent = '…';
+      try {
+        const { [AUTH_TOKEN_KEY]: token = '' } = await chrome.storage.local.get(AUTH_TOKEN_KEY);
+        const resp = await fetch(`${API_BASE}/supporter/redeem`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ code }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (resp.ok && data.user) {
+          // Persist the upgraded user + re-render the chip as unlimited.
+          await chrome.storage.local.set({ [AUTH_USER_KEY]: data.user });
+          renderSignedIn(data.user);
+          redeemInputEl.value = '';
+          showMsg('Unlocked — thank you! Unlimited access is active on this browser.', true);
+        } else {
+          showMsg(data.error || "Couldn't redeem that code.", false);
+        }
+      } catch {
+        showMsg("Couldn't reach the server. Try again.", false);
+      } finally {
+        redeemBtnEl.disabled = false;
+        redeemBtnEl.textContent = orig;
+      }
     });
   }
 }

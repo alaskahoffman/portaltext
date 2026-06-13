@@ -3289,7 +3289,11 @@ a.extlink.painting-hover::after { content: none !important; }
 .support-note p:last-child { margin-bottom: 0; }
 .support-note a { color: var(--lime-deep); border-bottom: 1px solid rgba(111,160,27,0.45); transition: border-color 160ms ease; }
 .support-note a:hover { border-bottom-color: var(--lime-deep); }
-.support-note .support-soon { font-family: var(--sans); font-size: 13px; letter-spacing: 0.01em; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 16px; margin-top: 22px; }
+.support-note .support-cta { border-top: 1px solid var(--rule); padding-top: 22px; margin-top: 22px; margin-bottom: 12px; }
+.support-btn { display: inline-block; font-family: var(--sans); font-weight: 800; font-size: 15px; letter-spacing: -0.01em; color: var(--lime-ink); background: var(--lime); border: 1px solid var(--lime-deep); border-bottom-width: 1px; border-radius: 999px; padding: 11px 22px; transition: filter 160ms ease, transform 120ms ease; }
+.support-btn:hover { filter: brightness(0.95); border-bottom-color: var(--lime-deep); }
+.support-btn:active { transform: translateY(1px); }
+.support-note .support-soon { font-family: var(--sans); font-size: 13px; letter-spacing: 0.01em; color: var(--muted); margin: 0; }
 .support-gif { margin: 0; text-align: center; }
 .support-gif img { width: 100%; max-width: 420px; border-radius: 12px; rotate: 2.5deg; box-shadow: 0 18px 44px rgba(40,52,24,0.16); }
 @media (max-width: 760px){ .support-row { grid-template-columns: 1fr; gap: 36px; } }
@@ -3979,7 +3983,8 @@ a.extlink.painting-hover::after { content: none !important; }
         <article class="support-note pause-item">
           <p>portaltext is made by one person &mdash; <a href="https://twitter.com/145k4" target="_blank" rel="noopener noreferrer">Alaska Hoffman</a>, a poet, artist, and solo developer &mdash; and the AI behind every hover costs real money to run.</p>
           <p>There&rsquo;s no paid tier to compare against, because everything here works on the free plan: no account, no trial, no wall. But if portaltext earns a place in your everyday reading and you&rsquo;d like to chip in, it would mean the world. Supporters get unlimited access to every feature &mdash; as a thank-you, and to help cover everyone else&rsquo;s hovers.</p>
-          <p class="support-soon">Supporting opens soon &middot; until then, it&rsquo;s all just free</p>
+          <p class="support-cta"><a class="support-btn" href="/supporter/checkout">Become a supporter &rarr;</a></p>
+          <p class="support-soon">Pay what you want &middot; one-time &middot; unlimited access, forever</p>
         </article>
         <figure class="support-gif pause-item">
           <img src="/assets/made-by-alaska.webp" alt="A polaroid of two cats, captioned: made by alaska!" loading="lazy" width="520" height="292" />
