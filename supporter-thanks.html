@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Thank you — portaltext</title>
+<title>Thank you &middot; portaltext</title>
 <meta name="robots" content="noindex" />
 <link rel="icon" type="image/svg+xml" href="/assets/portalcatmini.svg" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -52,11 +52,11 @@
   <main class="card">
     <div class="eyebrow">supporter</div>
     <h1>Thank you, <span class="bl">truly</span>.</h1>
-    <p>Your support keeps portaltext free for everyone — and unlocks unlimited access for you. If you started checkout from the extension, this browser is already upgraded.</p>
+    <p>Your support keeps portaltext free for everyone, and unlocks unlimited access for you. If you started checkout from the extension, this browser is already upgraded.</p>
 
     <div class="code-label">Your supporter code</div>
     <div class="code loading" id="code">fetching your code…</div>
-    <p class="save-note"><strong>Save this code.</strong> We&rsquo;re still wiring things up back here (portals are tricky!) — for now, DM it to Alaska herself <a href="https://twitter.com/145k4" target="_blank" rel="noopener">@145k4</a> to get unlocked, or hold tight a day or two for the redeem field to appear in the extension&rsquo;s settings. Either way, keep it — it restores your access if you reinstall or switch devices.</p>
+    <p class="save-note"><strong>Save this code.</strong> To unlock unlimited access, open the portaltext extension, head to <strong>Settings &rarr; Redeem supporter code</strong>, and paste it in. Keep it somewhere safe. The same code restores your access if you ever reinstall or switch browsers.</p>
 
     <a class="home" href="/">← back to portaltext.com</a>
   </main>
@@ -67,7 +67,7 @@
       const sessionId = new URLSearchParams(location.search).get('session_id');
       if (!sessionId) {
         codeEl.className = 'code error';
-        codeEl.textContent = 'Missing session — if you just paid, check your email receipt or contact support.';
+        codeEl.textContent = 'Missing session. If you just paid, check your email receipt or contact support.';
         return;
       }
       // The webhook may lag the redirect by a beat — retry a few times.

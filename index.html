@@ -3091,6 +3091,16 @@ a.extlink.painting-hover::after { content: none !important; }
   --muted:  #98a1ae;
 }
 
+/* Dark-mode contrast fixes for the supporter card. In light mode .support-note
+   is a frosted-white panel; over the navy paper that 40%-white turns into a
+   muddy grey slab and the light body/caption text on it becomes unreadable, so
+   drop it to a faint dark glass. The lime pills use the *dimmed* surface lime
+   (right for large background blocks, too dark under dark-green ink on a small
+   button), so give the buttons the bright undimmed lime back. */
+:root[data-theme="dark"] .support-note { background: rgba(255,255,255,0.05); }
+:root[data-theme="dark"] .support-btn,
+:root[data-theme="dark"] .nav-cta { background: #A4E22B; }
+
 /* ---- Blackletter accent (sparingly, one charged word per view) ---- */
 .bl {
   font-family: var(--bl);
@@ -3102,6 +3112,9 @@ a.extlink.painting-hover::after { content: none !important; }
 /* HERO headline — 'portal' set in blackletter, chartreuse-deep. */
 .hero-headline em { font-style: normal; color: var(--ink); }
 .hero-headline .hero-portal { display: inline-block; height: 1.7em; width: auto; vertical-align: -0.66em; }
+/* The wordmark SVG is solid black; in dark mode flip it light so it doesn't
+   vanish against the navy paper (matches the cream headline ink). */
+:root[data-theme="dark"] .hero-headline .hero-portal { filter: brightness(0) invert(1); }
 
 /* Wikilinks & accents — lift to the present green. */
 .block-demo .demo-passage a.wikilink,
@@ -3675,6 +3688,14 @@ a.extlink.painting-hover::after { content: none !important; }
    don't glare; the frosted pane + light type still hold against it. */
 :root[data-theme="dark"] .demo-scroll-wrapper,
 :root[data-theme="dark"] .install-finale { background: oklch(0.5 0.125 129); }
+/* The mobile-only "Desktop only" / "Install on your computer" panels use the
+   dark-green --lime-ink type meant for the light-mode bright-lime stages; on the
+   night-green it's unreadable. Flip them to the light type these stages carry. */
+:root[data-theme="dark"] .demo-desktop-only,
+:root[data-theme="dark"] .demo-desktop-only .sec-marker,
+:root[data-theme="dark"] .demo-desktop-only h3,
+:root[data-theme="dark"] .demo-desktop-only p,
+:root[data-theme="dark"] .install-desktop-only .install-desktop-head { color: #f4ede0; }
 /* soften the ambient white glow and the bright diagonal "acetate" sheens so they
    stop flaring against the dark surface */
 :root[data-theme="dark"] .install-finale::before { opacity: 0.5; }
@@ -4222,7 +4243,7 @@ a.extlink.painting-hover::after { content: none !important; }
       <a href="#"><img src="/assets/handdrawn-32.svg" alt="" class="footer-home" />Home</a>
       <a href="#install">Install</a>
       <a href="/privacy">Privacy</a>
-      <a href="mailto:hello@portaltext.com">Contact</a>
+      <a href="mailto:hello@alaskahoffman.com">Contact</a>
     </nav>
     <div class="footer-meta-col">
       <div>made with <img src="/assets/handdrawn-26.svg" alt="love" /> in 2026</div>
