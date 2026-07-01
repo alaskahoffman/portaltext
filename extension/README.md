@@ -28,8 +28,8 @@ AGPL-3.0.
   tooltip rendering (DOMPurify-sanitized, fails closed), recursive stacking,
   citation detection, full-page annotation, etymology trees, saves.
 - **`popup.html` / `popup.js`** — per-domain toggle, usage ring, language +
-  theme settings, saves list, and the install ID (click-to-copy; quote it in
-  support requests or supporter upgrades).
+  theme settings, optional hold-Control activation, saves list, and the
+  install ID (click-to-copy; quote it in support requests or supporter upgrades).
 
 ## Install (dev)
 

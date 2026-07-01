@@ -17,6 +17,7 @@ const DISABLED_KEY = 'disabledDomains';
 const THEME_KEY = 'theme';
 const AUTH_TOKEN_KEY = 'authToken';
 const AUTH_USER_KEY = 'authUser';      // cached publicUserFields blob; refreshed on each popup open
+const REQUIRE_CTRL_KEY = 'requireCtrlToActivate';
 
 // Single base for backend + site links. Point at http://localhost:3000 to
 // test against a local server (keep background.js's API_BASE in sync).
@@ -36,6 +37,7 @@ const savesBackBtnEl = document.getElementById('savesBackBtn');
 const settingsNavBtnEl = document.getElementById('settingsNavBtn');
 const settingsBackBtnEl = document.getElementById('settingsBackBtn');
 const languageSelectEl = document.getElementById('languageSelect');
+const requireCtrlToggleEl = document.getElementById('requireCtrlToggle');
 const mainViewEl = document.getElementById('mainView');
 const savesViewEl = document.getElementById('savesView');
 const settingsViewEl = document.getElementById('settingsView');
@@ -65,6 +67,10 @@ async function loadSettings() {
   if (languageSelectEl) {
     const { [PREF_LANG_KEY]: lang = 'auto' } = await chrome.storage.local.get(PREF_LANG_KEY);
     languageSelectEl.value = lang;
+  }
+  if (requireCtrlToggleEl) {
+    const { [REQUIRE_CTRL_KEY]: requireCtrl = false } = await chrome.storage.local.get(REQUIRE_CTRL_KEY);
+    requireCtrlToggleEl.checked = requireCtrl === true;
   }
   // Install ID — the anon identity's user id. Shown so people can quote it
   // in support requests and (eventually) supporter-tier upgrades.
@@ -482,6 +488,11 @@ async function init() {
   if (languageSelectEl) {
     languageSelectEl.addEventListener('change', async () => {
       await chrome.storage.local.set({ [PREF_LANG_KEY]: languageSelectEl.value });
+    });
+  }
+  if (requireCtrlToggleEl) {
+    requireCtrlToggleEl.addEventListener('change', async () => {
+      await chrome.storage.local.set({ [REQUIRE_CTRL_KEY]: requireCtrlToggleEl.checked });
     });
   }
   if (installIdEl) {

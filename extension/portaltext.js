@@ -36,6 +36,11 @@
   // ----- Configuration -----
   // SUMMARY_ENDPOINT lives in background.js (the worker owns all fetches).
   const PLAIN_ANCHORS = true;
+  let requireCtrlToActivate = false;
+
+  chrome.storage.local.get('requireCtrlToActivate').then(({ requireCtrlToActivate: value }) => {
+    requireCtrlToActivate = value === true;
+  }).catch(() => { /* keep the default hover-only behavior */ });
 
   // ----- Live enable/disable -----
   // The popup writes to chrome.storage.local["disabledDomains"] when the
@@ -59,6 +64,13 @@
     }
     if (changes.preferredLanguage) {
       preferredLanguage = changes.preferredLanguage.newValue || 'auto';
+    }
+    if (changes.requireCtrlToActivate) {
+      requireCtrlToActivate = changes.requireCtrlToActivate.newValue === true;
+      if (requireCtrlToActivate && !ctrlActivationHeld && openTimer) {
+        clearTimeout(openTimer);
+        openTimer = null;
+      }
     }
   });
 
@@ -1962,6 +1974,10 @@ img.active {
   let closeTimer = null;
   let lastCursorX = 0;
   let lastCursorY = 0;
+  // When optional Ctrl activation is enabled, keep our own key state so
+  // pressing Ctrl after the cursor is already parked on a link works too.
+  let ctrlActivationHeld = false;
+  let lastHoverTarget = null;
 
   document.addEventListener('mousemove', (e) => {
     lastCursorX = e.clientX;
@@ -2587,6 +2603,18 @@ img.active {
   // on the shadow root.
   function handleMouseover(e) {
     if (!portaltextEnabled) return;
+    // At document level, events from a tooltip's shadow tree are retargeted
+    // to the shadow host. composedPath()[0] preserves the actual inner node,
+    // which lets "hover, then press Ctrl" work for recursive tooltip links.
+    const eventTarget = (typeof e?.composedPath === 'function'
+      ? e.composedPath().find(node => node?.nodeType === 1)
+      : null) || e?.target || (e?.nodeType === 1 ? e : null);
+    if (eventTarget) lastHoverTarget = eventTarget;
+    // MouseEvent.ctrlKey is also a recovery path if a page intercepted the
+    // keyup event: every new hover re-synchronizes our key state instead of
+    // leaving Ctrl activation accidentally latched on.
+    if (typeof e?.ctrlKey === 'boolean') ctrlActivationHeld = e.ctrlKey;
+    if (requireCtrlToActivate && !ctrlActivationHeld) return;
     const link = findHoverable(e);
     if (!link) return;
     const cls = classify(link);
@@ -2600,7 +2628,7 @@ img.active {
     // close-on-mousemove logic treat the cursor as "still hovering" anywhere
     // inside the conceptual hover region (the whole post), not only over the
     // image we summarize.
-    const tgt = e.target;
+    const tgt = eventTarget;
     const hoverHost = tgt && tgt !== link ? tgt : null;
     if (openTimer) clearTimeout(openTimer);
     // Shorter delay for hovers inside an already-open tooltip — user is in
@@ -2608,6 +2636,8 @@ img.active {
     const delay = depth > 0 ? HOVER_OPEN_DELAY_NESTED : HOVER_OPEN_DELAY;
     openTimer = setTimeout(() => {
       openTimer = null;
+      // Releasing Ctrl before the dwell delay completes cancels the gesture.
+      if (requireCtrlToActivate && !ctrlActivationHeld) return;
       while (STACK.length > depth) {
         removeTooltip(STACK.pop());
       }
@@ -2646,7 +2676,29 @@ img.active {
   }, true); // capture phase so we run before the page's own click handlers
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeAllTooltips();
+    if (e.key === 'Escape') {
+      closeAllTooltips();
+      return;
+    }
+    if (e.key !== 'Control') return;
+    ctrlActivationHeld = true;
+    // A key press does not produce a new mouseover event. If Ctrl was pressed
+    // while the pointer was already resting on a candidate, begin the normal
+    // delayed-open flow from the last target seen under the pointer.
+    if (requireCtrlToActivate && !e.repeat && lastHoverTarget?.isConnected && lastHoverTarget.matches?.(':hover')) {
+      handleMouseover(lastHoverTarget);
+    }
+  }, true);
+
+  document.addEventListener('keyup', (e) => {
+    if (e.key !== 'Control') return;
+    ctrlActivationHeld = false;
+    if (requireCtrlToActivate && openTimer) { clearTimeout(openTimer); openTimer = null; }
+  }, true);
+
+  window.addEventListener('blur', () => {
+    ctrlActivationHeld = false;
+    if (requireCtrlToActivate && openTimer) { clearTimeout(openTimer); openTimer = null; }
   });
 
   // Engine-only click: stack management. Click navigation on the protocol

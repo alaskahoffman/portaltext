@@ -245,6 +245,51 @@
       max-width: 130px;
     }
     .settings-select:focus { outline: 1px solid var(--ink); }
+    .settings-switch {
+      position: relative;
+      display: inline-flex;
+      flex: 0 0 auto;
+      width: 34px;
+      height: 20px;
+      cursor: pointer;
+    }
+    .settings-switch input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+    }
+    .settings-switch-track {
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      border: 1px solid var(--rule-strong);
+      border-radius: 999px;
+      background: var(--paper-dim);
+      transition: background-color 160ms ease, border-color 160ms ease;
+    }
+    .settings-switch-track::after {
+      content: '';
+      display: block;
+      width: 14px;
+      height: 14px;
+      margin: 2px;
+      border-radius: 50%;
+      background: var(--ink-soft);
+      transition: transform 160ms ease, background-color 160ms ease;
+    }
+    .settings-switch input:checked + .settings-switch-track {
+      background: color-mix(in srgb, var(--avocado) 18%, var(--paper));
+      border-color: var(--avocado);
+    }
+    .settings-switch input:checked + .settings-switch-track::after {
+      background: var(--avocado);
+      transform: translateX(14px);
+    }
+    .settings-switch input:focus-visible + .settings-switch-track {
+      outline: 2px solid var(--ink);
+      outline-offset: 2px;
+    }
     .install-id {
       padding: 4px 0;
       background: none;
@@ -688,6 +733,16 @@
         <option value="zh-CN">中文（简体）</option>
         <option value="zh-TW">中文（繁體）</option>
       </select>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-label">
+        Hold Control to activate
+        <span class="settings-row-hint">When off, hovering alone opens previews.</span>
+      </div>
+      <label class="settings-switch">
+        <input id="requireCtrlToggle" type="checkbox" aria-label="Hold Control to activate portaltext">
+        <span class="settings-switch-track" aria-hidden="true"></span>
+      </label>
     </div>
     <div class="settings-row">
       <div class="settings-row-label">
